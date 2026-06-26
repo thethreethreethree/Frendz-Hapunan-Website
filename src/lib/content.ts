@@ -22,7 +22,25 @@ export type MenuItem = {
   price: number;
   sort_order: number;
   is_available?: boolean;
+  image_url?: string;
 };
+
+// Dish → photo. Used when a menu row has no image_url of its own (e.g. the live
+// DB rows seeded before the image_url column existed), so photos appear without a
+// schema change. A row's own image_url always takes precedence (admin-editable).
+const IMAGE_BY_NAME: Record<string, string> = {
+  "Lumpiang Isda": "/menu/lumpiang-isda.png",
+  "Chicken Inasal at Talong Ensalada": "/menu/chicken-inasal.png",
+  "Suman at Latik": "/menu/suman-at-latik.png",
+  "Sago at Gulaman": "/menu/sago-at-gulaman.png",
+};
+
+export function imageForMenuItem(item: {
+  name: string;
+  image_url?: string;
+}): string {
+  return item.image_url || IMAGE_BY_NAME[item.name] || "";
+}
 
 export const DEFAULT_EVENT: EventSettings = {
   event_name: "Frendz Hapunan",

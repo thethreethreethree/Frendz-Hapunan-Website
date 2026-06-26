@@ -1,4 +1,5 @@
 import { getEventSettings, getMenu } from "@/lib/data";
+import { imageForMenuItem } from "@/lib/content";
 import {
   Banderitas,
   FiestaTitle,
@@ -96,6 +97,7 @@ export default async function Home() {
               title={item.name}
               description={item.description}
               ringColor={RING[i % RING.length]}
+              image={imageForMenuItem(item)}
             />
           ))}
         </div>

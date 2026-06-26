@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { MenuImage } from "./menu-image";
 
 /** Rounded category badge ("pill"), teal or orange per the posters. */
 export function Pill({
@@ -47,46 +48,64 @@ export function CTAButton({
   );
 }
 
-/** A course card: pill badge + circular decorative frame + name + description. */
+/** A course card: large food photo (click to enlarge) + pill badge + name + description.
+ *  Falls back to an initials circle if no image is available. */
 export function CourseCard({
   badge,
   badgeTone,
   title,
   description,
   ringColor,
+  image,
 }: {
   badge: string;
   badgeTone: "teal" | "orange";
   title: string;
   description: string;
   ringColor: string;
+  image?: string;
 }) {
-  // Decorative circular placeholder (no real food photos were provided — honest).
   const initials = title
     .split(" ")
     .slice(0, 2)
     .map((w) => w[0])
     .join("");
   return (
-    <article className="relative flex flex-col rounded-3xl border-[3px] border-ink/15 bg-cream-deep/70 p-6 shadow-[0_6px_0_rgba(58,44,32,0.12)]">
-      <div className="-mt-10 mb-2 self-start">
-        <Pill tone={badgeTone}>{badge}</Pill>
-      </div>
-      <div className="flex items-start gap-4">
-        <div
-          className="grid h-20 w-20 shrink-0 place-items-center rounded-full border-[5px] bg-cream font-display text-2xl font-extrabold text-ink/70"
-          style={{ borderColor: ringColor }}
-          aria-hidden
-        >
-          {initials}
+    <article className="relative flex flex-col overflow-hidden rounded-3xl border-[3px] border-ink/15 bg-cream-deep/70 shadow-[0_6px_0_rgba(58,44,32,0.12)]">
+      {image ? (
+        <div className="p-4 pb-0">
+          <MenuImage src={image} alt={title} ringColor={ringColor} />
         </div>
-        <div>
+      ) : null}
+
+      <div className="p-6 pt-4">
+        <div className="mb-2">
+          <Pill tone={badgeTone}>{badge}</Pill>
+        </div>
+
+        {image ? (
           <h3 className="font-display text-2xl font-extrabold leading-tight text-maroon">
             {title}
           </h3>
-        </div>
+        ) : (
+          <div className="flex items-start gap-4">
+            <div
+              className="grid h-20 w-20 shrink-0 place-items-center rounded-full border-[5px] bg-cream font-display text-2xl font-extrabold text-ink/70"
+              style={{ borderColor: ringColor }}
+              aria-hidden
+            >
+              {initials}
+            </div>
+            <h3 className="font-display text-2xl font-extrabold leading-tight text-maroon">
+              {title}
+            </h3>
+          </div>
+        )}
+
+        <p className="mt-3 text-[15px] leading-relaxed text-ink/80">
+          {description}
+        </p>
       </div>
-      <p className="mt-3 text-[15px] leading-relaxed text-ink/80">{description}</p>
     </article>
   );
 }
