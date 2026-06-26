@@ -1,6 +1,6 @@
 import { getEventSettings, getMenu } from "@/lib/data";
 import { imageForMenuItem } from "@/lib/content";
-import { StringLights, WovenStripe } from "@/components/decor";
+import { WovenStripe } from "@/components/decor";
 import { CTAButton, CourseCard, Pill } from "@/components/ui";
 
 // Public page reads admin-editable content; render fresh so menu/price edits show.
@@ -21,18 +21,19 @@ export default async function Home() {
 
   return (
     <main className="flex-1">
-      {/* ── Poster hero (illustrated promo art) ───────────────────
-          Uses public/hero-poster.jpg — swap that file with the comic
-          poster anytime. Cropped to the scene+title so it doesn't
-          duplicate the live menu rendered below. */}
-      <section className="relative">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src="/hero-poster.jpg"
-          alt={`${event.event_name} — ${event.event_subtitle}`}
-          className="h-[300px] w-full border-b-4 border-inkline object-cover object-top sm:h-[440px] lg:h-[520px]"
-        />
-        <StringLights className="absolute inset-x-0 top-0 opacity-90" />
+      {/* ── Hero banner (full promo image) ────────────────────────
+          public/hero-poster.jpg is a complete banner (title + scene +
+          info bar baked in), so it is shown WHOLE (not cropped), capped
+          to a max width so it doesn't get oversized on desktop. */}
+      <section className="bg-cream px-4 pb-2 pt-6">
+        <div className="mx-auto max-w-6xl">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/hero-poster.jpg"
+            alt={`${event.event_name} — ${event.event_subtitle}`}
+            className="ink-card w-full rounded-2xl"
+          />
+        </div>
       </section>
 
       {/* ── Action bar ────────────────────────────────────────── */}
