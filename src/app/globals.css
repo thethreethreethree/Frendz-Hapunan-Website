@@ -1,0 +1,39 @@
+@import "tailwindcss";
+
+@theme {
+  /* Palette — approximated from the Frendz Hapunan posters (tunable). */
+  --color-brand: #138a8c;
+  --color-brand-dark: #0f7174;
+  --color-brand-light: #2bb6b3;
+
+  --color-accent: #e2641f;
+  --color-accent-dark: #c0521a;
+  --color-accent-light: #f2873a;
+
+  --color-cream: #fbf1d6;
+  --color-cream-deep: #f4e6c0;
+
+  --color-navy: #262463;
+  --color-navy-deep: #171544;
+
+  --color-maroon: #7a2e16;
+  --color-leaf: #2f8f44;
+  --color-ink: #3a2c20;
+
+  /* Fiesta / banderitas set */
+  --color-fiesta-red: #d23b2e;
+  --color-fiesta-orange: #e2641f;
+  --color-fiesta-yellow: #f3b73e;
+  --color-fiesta-green: #3a9d4b;
+  --color-fiesta-teal: #138a8c;
+  --color-fiesta-blue: #2a6fb0;
+  --color-fiesta-purple: #7a4ea3;
+
+  --font-display: var(--font-baloo), ui-sans-serif, system-ui, sans-serif;
+  --font-body: var(--font-mulish), ui-sans-serif, system-ui, sans-serif;
+}
+
+body {
+  background-color: var(--color-cream);
+  color: var(--color-ink);
+}
