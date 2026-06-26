@@ -73,7 +73,7 @@ export default function BookPage() {
 
       <form
         onSubmit={onSubmit}
-        className="mx-auto my-10 max-w-2xl rounded-3xl border-[3px] border-ink/15 bg-cream-deep/60 px-6 py-8 sm:px-10"
+        className="ink-card mx-auto my-10 max-w-2xl rounded-3xl bg-cream-deep/70 px-6 py-8 sm:px-10"
       >
         <div className="grid gap-5 sm:grid-cols-2">
           <div>

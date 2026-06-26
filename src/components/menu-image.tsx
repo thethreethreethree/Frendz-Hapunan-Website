@@ -36,7 +36,7 @@ export function MenuImage({
         type="button"
         onClick={() => setOpen(true)}
         aria-label={`Enlarge photo of ${alt}`}
-        className="group relative block w-full overflow-hidden rounded-2xl border-[3px] shadow-md focus:outline-none focus-visible:ring-4 focus-visible:ring-brand/40"
+        className="group relative block w-full overflow-hidden rounded-2xl border-4 shadow-[0_4px_0_0_rgba(44,32,22,0.35)] focus:outline-none focus-visible:ring-4 focus-visible:ring-brand/40"
         style={{ borderColor: ringColor }}
       >
         {/* eslint-disable-next-line @next/next/no-img-element */}

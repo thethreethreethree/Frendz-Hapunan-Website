@@ -46,7 +46,7 @@ export function TriviaGame({ questions }: { questions: TriviaQuestion[] }) {
             ? "Not bad! A few more kainan and you will master it."
             : "Time to taste the real thing and learn as you eat!";
     return (
-      <div className="mx-auto max-w-xl rounded-3xl border-[3px] border-brand/40 bg-brand/10 p-8 text-center">
+      <div className="ink-card mx-auto max-w-xl rounded-3xl bg-brand/10 p-8 text-center">
         <p className="font-display text-lg font-bold text-brand-dark">
           Your score
         </p>
@@ -90,7 +90,7 @@ export function TriviaGame({ questions }: { questions: TriviaQuestion[] }) {
         />
       </div>
 
-      <div className="rounded-3xl border-[3px] border-ink/15 bg-cream-deep/60 p-6 sm:p-8">
+      <div className="ink-card rounded-3xl bg-cream-deep/70 p-6 sm:p-8">
         <h2 className="font-display text-2xl font-extrabold text-maroon">
           {q.question}
         </h2>

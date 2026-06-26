@@ -33,7 +33,7 @@ export default async function BookingStatusPage({
 
       <div className="mx-auto my-10 max-w-2xl px-6">
         {!booking ? (
-          <div className="rounded-3xl border-[3px] border-ink/15 bg-cream-deep/60 p-8 text-center">
+          <div className="ink-card rounded-3xl bg-cream-deep/70 p-8 text-center">
             <h1 className="font-display text-2xl font-extrabold text-maroon">
               We could not find that booking
             </h1>
@@ -69,7 +69,7 @@ export default async function BookingStatusPage({
             </p>
           </div>
         ) : booking.status === "cancelled" ? (
-          <div className="rounded-3xl border-[3px] border-ink/15 bg-cream-deep/60 p-8 text-center">
+          <div className="ink-card rounded-3xl bg-cream-deep/70 p-8 text-center">
             <h1 className="font-display text-2xl font-extrabold text-maroon">
               This booking was cancelled
             </h1>

@@ -71,7 +71,7 @@ export function CourseCard({
     .map((w) => w[0])
     .join("");
   return (
-    <article className="relative flex flex-col overflow-hidden rounded-3xl border-[3px] border-ink/15 bg-cream-deep/70 shadow-[0_6px_0_rgba(58,44,32,0.12)]">
+    <article className="ink-card relative flex flex-col overflow-hidden rounded-3xl bg-cream-deep/80">
       {image ? (
         <div className="p-4 pb-0">
           <MenuImage src={image} alt={title} ringColor={ringColor} />

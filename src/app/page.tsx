@@ -1,12 +1,6 @@
 import { getEventSettings, getMenu } from "@/lib/data";
 import { imageForMenuItem } from "@/lib/content";
-import {
-  Banderitas,
-  FiestaTitle,
-  LeafCorner,
-  StringLights,
-  WovenStripe,
-} from "@/components/decor";
+import { StringLights, WovenStripe } from "@/components/decor";
 import { CTAButton, CourseCard, Pill } from "@/components/ui";
 
 // Public page reads admin-editable content; render fresh so menu/price edits show.
@@ -27,31 +21,24 @@ export default async function Home() {
 
   return (
     <main className="flex-1">
-      {/* ── Hero ─────────────────────────────────────────────── */}
-      <section className="relative overflow-hidden bg-gradient-to-b from-navy-deep via-navy to-brand-dark text-cream">
-        <Banderitas className="px-2 pt-3" />
-        <LeafCorner className="absolute left-0 top-8 h-32 w-32 text-leaf opacity-30" />
-        <LeafCorner
-          className="absolute right-0 top-16 h-28 w-28 text-leaf opacity-25"
-          flip
+      {/* ── Poster hero (illustrated promo art) ───────────────────
+          Uses public/hero-poster.jpg — swap that file with the comic
+          poster anytime. Cropped to the scene+title so it doesn't
+          duplicate the live menu rendered below. */}
+      <section className="relative">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/hero-poster.jpg"
+          alt={`${event.event_name} — ${event.event_subtitle}`}
+          className="h-[300px] w-full border-b-4 border-inkline object-cover object-top sm:h-[440px] lg:h-[520px]"
         />
+        <StringLights className="absolute inset-x-0 top-0 opacity-90" />
+      </section>
 
-        <div className="relative mx-auto max-w-5xl px-6 pb-16 pt-10 text-center">
-          <FiestaTitle
-            text={event.event_name}
-            className="font-display text-5xl font-extrabold drop-shadow-[0_3px_0_rgba(0,0,0,0.35)] sm:text-7xl"
-          />
-          <p className="mt-3 font-display text-2xl font-bold text-cream sm:text-3xl">
-            {event.event_subtitle}
-          </p>
-
-          <div className="mx-auto mt-6 max-w-2xl rounded-2xl bg-accent px-6 py-3 shadow-lg">
-            <p className="font-display text-lg font-extrabold uppercase tracking-wide text-cream sm:text-xl">
-              {event.tagline}
-            </p>
-          </div>
-
-          <div className="mt-7 flex flex-wrap items-center justify-center gap-3 font-body text-base font-semibold">
+      {/* ── Action bar ────────────────────────────────────────── */}
+      <section className="border-b-4 border-inkline bg-brand text-cream">
+        <div className="mx-auto flex max-w-5xl flex-col items-center gap-5 px-6 py-6 sm:flex-row sm:justify-between">
+          <div className="flex flex-wrap items-center justify-center gap-3 font-body font-semibold">
             <span className="rounded-full bg-cream/15 px-4 py-2 ring-1 ring-cream/30">
               📍 {event.location}
             </span>
@@ -62,8 +49,7 @@ export default async function Home() {
               {price} / pax
             </span>
           </div>
-
-          <div className="mt-9 flex flex-col items-center justify-center gap-4 sm:flex-row">
+          <div className="flex flex-col gap-3 sm:flex-row">
             <CTAButton href="/book" tone="accent">
               Reserve your seat
             </CTAButton>
@@ -72,14 +58,13 @@ export default async function Home() {
             </CTAButton>
           </div>
         </div>
-        <StringLights className="opacity-90" />
       </section>
 
       {/* ── Menu ─────────────────────────────────────────────── */}
       <section className="relative mx-auto max-w-6xl px-6 py-16">
         <div className="mb-10 text-center">
           <Pill tone="orange">Tonight on the table</Pill>
-          <h2 className="mt-4 font-display text-4xl font-extrabold text-maroon">
+          <h2 className="ink-title mt-4 font-display text-4xl font-extrabold text-maroon">
             The Hapunan Set Menu
           </h2>
           <p className="mx-auto mt-2 max-w-xl text-ink/70">
