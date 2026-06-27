@@ -55,3 +55,15 @@ body {
   -webkit-text-stroke: 0.5px rgba(44, 32, 22, 0.25);
   text-shadow: 0 2px 0 rgba(44, 32, 22, 0.12);
 }
+
+/* Gentle attention pulse for emphasized CTAs (respects reduced-motion). */
+@keyframes emphasis-pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.045); }
+}
+.emphasis-pulse {
+  animation: emphasis-pulse 1.8s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .emphasis-pulse { animation: none; }
+}

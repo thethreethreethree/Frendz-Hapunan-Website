@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { getEventSettings, getMenu } from "@/lib/data";
 import { imageForMenuItem } from "@/lib/content";
 import { WovenStripe } from "@/components/decor";
@@ -50,13 +51,16 @@ export default async function Home() {
               {price} / pax
             </span>
           </div>
-          <div className="flex flex-col gap-3 sm:flex-row">
+          <div className="flex flex-col items-stretch gap-3 sm:flex-row sm:items-center">
             <CTAButton href="/book" tone="accent">
               Reserve your seat
             </CTAButton>
-            <CTAButton href="/trivia" tone="outline">
-              Play the Food Trivia
-            </CTAButton>
+            <Link
+              href="/trivia"
+              className="emphasis-pulse inline-flex items-center justify-center gap-2 rounded-full bg-fiesta-yellow px-7 py-3.5 font-display text-lg font-extrabold text-ink shadow-[0_4px_0_0_rgba(44,32,22,0.4)] ring-2 ring-inkline/30 transition-transform hover:-translate-y-0.5"
+            >
+              🏆 Play the Food Trivia
+            </Link>
           </div>
         </div>
       </section>
@@ -86,6 +90,31 @@ export default async function Home() {
               image={imageForMenuItem(item)}
             />
           ))}
+        </div>
+      </section>
+
+      {/* ── Food Trivia feature (emphasized) ──────────────────── */}
+      <WovenStripe />
+      <section className="bg-accent text-cream">
+        <div className="mx-auto max-w-4xl px-6 py-14 text-center">
+          <span className="inline-block rounded-full bg-cream/20 px-4 py-1.5 font-display text-sm font-extrabold uppercase tracking-wide ring-1 ring-cream/50">
+            🏆 New · Leaderboard
+          </span>
+          <h2 className="ink-title mt-4 font-display text-4xl font-extrabold sm:text-5xl">
+            Think you know Filipino food?
+          </h2>
+          <p className="mx-auto mt-3 max-w-xl text-lg text-cream/90">
+            Play the 10-question Food Trivia and climb the leaderboard — most
+            correct, then fastest, wins. Can you score a perfect 10/10?
+          </p>
+          <div className="mt-8 flex justify-center">
+            <Link
+              href="/trivia"
+              className="emphasis-pulse inline-flex items-center gap-2 rounded-full bg-cream px-10 py-4 font-display text-xl font-extrabold text-accent-dark shadow-[0_6px_0_0_rgba(44,32,22,0.4)] ring-2 ring-inkline/30 transition-transform hover:-translate-y-0.5"
+            >
+              🧠 Play the Food Trivia →
+            </Link>
+          </div>
         </div>
       </section>
 
