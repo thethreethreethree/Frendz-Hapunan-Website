@@ -39,12 +39,11 @@ export async function setBookingStatus(id: string, status: "confirmed" | "cancel
 export async function saveEventSettings(formData: FormData) {
   const user = await ensureAdmin();
   const db = createSupabaseAdminClient();
+  // Shared fields only — price + time are now per-day (see saveDailyOffering).
   const patch = {
     event_subtitle: String(formData.get("event_subtitle") ?? ""),
     tagline: String(formData.get("tagline") ?? ""),
     location: String(formData.get("location") ?? ""),
-    event_time: String(formData.get("event_time") ?? ""),
-    price_per_pax: Number(formData.get("price_per_pax") ?? 0),
     reception_instructions: String(formData.get("reception_instructions") ?? ""),
   };
   await db.from("event_settings").update(patch).eq("id", 1);
@@ -53,8 +52,32 @@ export async function saveEventSettings(formData: FormData) {
     entity_type: "event_settings",
     entity_id: EVENT_SETTINGS_ENTITY,
     actor: `admin:${user.id}`,
-    payload: { price_per_pax: patch.price_per_pax },
+    payload: patch,
   });
+  revalidatePath("/admin");
+  revalidatePath("/");
+}
+
+// ── Daily offerings (weekly calendar) ────────────────────────────────
+export async function saveDailyOffering(day: string, formData: FormData) {
+  await ensureAdmin();
+  const db = createSupabaseAdminClient();
+  await db
+    .from("daily_offerings")
+    .update({
+      is_active: formData.get("is_active") === "on",
+      price_per_pax: Number(formData.get("price_per_pax") ?? 0),
+      event_time: String(formData.get("event_time") ?? ""),
+    })
+    .eq("day", day);
+  revalidatePath("/admin");
+  revalidatePath("/");
+}
+
+export async function setFeaturedDay(day: string) {
+  await ensureAdmin();
+  const db = createSupabaseAdminClient();
+  await db.from("event_settings").update({ featured_day: day }).eq("id", 1);
   revalidatePath("/admin");
   revalidatePath("/");
 }
@@ -91,6 +114,7 @@ export async function addMenuItem(formData: FormData) {
     price: Number(formData.get("price") ?? 0),
     sort_order: Number(formData.get("sort_order") ?? 99),
     is_available: true,
+    offering_day: String(formData.get("day") ?? "friday"),
   };
   const { data } = await db.from("menu_items").insert(insert).select("id").single();
   if (data) {
