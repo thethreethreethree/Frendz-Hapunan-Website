@@ -58,6 +58,20 @@ const DAY_KEYS = DAYS.map((d) => d.key);
 const input =
   "w-full rounded-lg border-2 border-ink/15 bg-white px-3 py-2 text-sm outline-none focus:border-brand";
 
+function phTime(iso: string) {
+  try {
+    return new Date(iso).toLocaleString("en-US", {
+      timeZone: "Asia/Manila",
+      month: "short",
+      day: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+    });
+  } catch {
+    return iso;
+  }
+}
+
 export default async function AdminDashboard({
   searchParams,
 }: {
@@ -69,12 +83,27 @@ export default async function AdminDashboard({
   const sp = await searchParams;
   const db = createSupabaseAdminClient();
 
-  const [{ data: bookings }, { data: offeringsData }, { data: settings }] =
-    await Promise.all([
-      db.from("bookings").select("*").order("created_at", { ascending: false }),
-      db.from("daily_offerings").select("*"),
-      db.from("event_settings").select("*").eq("id", 1).single(),
-    ]);
+  const [
+    { data: bookings },
+    { data: offeringsData },
+    { data: settings },
+    { count: scanCount },
+    { data: recentScans },
+  ] = await Promise.all([
+    db.from("bookings").select("*").order("created_at", { ascending: false }),
+    db.from("daily_offerings").select("*"),
+    db.from("event_settings").select("*").eq("id", 1).single(),
+    db
+      .from("events")
+      .select("*", { count: "exact", head: true })
+      .eq("event_type", "qr.scan"),
+    db
+      .from("events")
+      .select("created_at")
+      .eq("event_type", "qr.scan")
+      .order("created_at", { ascending: false })
+      .limit(12),
+  ]);
 
   const featured: string = settings?.featured_day ?? "friday";
   const selectedDay =
@@ -396,6 +425,50 @@ export default async function AdminDashboard({
               ))}
             </tbody>
           </table>
+        </div>
+      </section>
+
+      {/* ── Website QR code + scans ──────────────────────────── */}
+      <section className="mb-12">
+        <h2 className="mb-3 font-display text-2xl font-extrabold text-brand-dark">
+          Website QR code
+        </h2>
+        <div className="flex flex-col gap-6 rounded-2xl border-2 border-ink/10 bg-cream-deep/40 p-5 sm:flex-row sm:items-center">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/frendz-hapunan-qr.png"
+            alt="Frendz Hapunan website QR code"
+            className="h-40 w-40 shrink-0 rounded-xl border-2 border-ink/15 bg-white p-2"
+          />
+          <div className="flex-1">
+            <p className="font-display text-3xl font-extrabold text-accent-dark">
+              {scanCount ?? 0}{" "}
+              <span className="text-base font-bold text-ink/60">total scans</span>
+            </p>
+            <p className="mt-1 text-sm text-ink/70">
+              Permanent QR — print it anywhere. Every scan opens the website and
+              is counted here.
+            </p>
+            <a
+              href="/frendz-hapunan-qr.png"
+              download="Frendz-Hapunan-QR.png"
+              className="mt-3 inline-block rounded-full bg-brand px-5 py-2 text-sm font-bold text-cream"
+            >
+              ⬇ Download QR
+            </a>
+            {recentScans && recentScans.length > 0 && (
+              <div className="mt-4">
+                <p className="text-xs font-bold uppercase tracking-wide text-ink/50">
+                  Recent scans (Philippine time)
+                </p>
+                <ul className="mt-1 grid grid-cols-2 gap-x-4 text-sm text-ink/75 sm:grid-cols-3">
+                  {(recentScans as { created_at: string }[]).map((s, i) => (
+                    <li key={i}>{phTime(s.created_at)}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
         </div>
       </section>
 
