@@ -29,10 +29,15 @@ export type MenuItem = {
 // DB rows seeded before the image_url column existed), so photos appear without a
 // schema change. A row's own image_url always takes precedence (admin-editable).
 const IMAGE_BY_NAME: Record<string, string> = {
+  // Friday
   "Lumpiang Isda": "/menu/lumpiang-isda.png",
   "Chicken Inasal at Talong Ensalada": "/menu/chicken-inasal.png",
   "Suman at Latik": "/menu/suman-at-latik.png",
   "Sago at Gulaman": "/menu/sago-at-gulaman.png",
+  // Sunday
+  "Fish Tinapa Okoy": "/menu/fish-tinapa-okoy.jpg",
+  "Adobong Manok sa Latik at Lato": "/menu/adobong-manok.jpg",
+  "Turones": "/menu/turones.jpg",
 };
 
 export function imageForMenuItem(item: {

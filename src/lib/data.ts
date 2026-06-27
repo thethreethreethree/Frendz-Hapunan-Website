@@ -18,6 +18,22 @@ function publicClient() {
   return createClient(url, key, { auth: { persistSession: false } });
 }
 
+export async function getFeaturedDay(): Promise<string> {
+  const c = publicClient();
+  if (!c) return "friday";
+  try {
+    const { data } = await c
+      .from("event_settings")
+      .select("featured_day")
+      .eq("id", 1)
+      .single();
+    const d = (data as { featured_day?: string } | null)?.featured_day;
+    return d || "friday";
+  } catch {
+    return "friday";
+  }
+}
+
 export async function getEventSettings(): Promise<EventSettings> {
   const c = publicClient();
   if (!c) return DEFAULT_EVENT;
@@ -27,7 +43,23 @@ export async function getEventSettings(): Promise<EventSettings> {
       .select("*")
       .eq("id", 1)
       .single();
-    return (data as EventSettings) ?? DEFAULT_EVENT;
+    let ev = (data as EventSettings) ?? DEFAULT_EVENT;
+
+    // Post-calendar-migration: price + time come from the featured day's offering.
+    const day = (data as { featured_day?: string } | null)?.featured_day || "friday";
+    const off = await c
+      .from("daily_offerings")
+      .select("price_per_pax,event_time")
+      .eq("day", day)
+      .single();
+    if (!off.error && off.data) {
+      ev = {
+        ...ev,
+        price_per_pax: (off.data as { price_per_pax: number }).price_per_pax,
+        event_time: (off.data as { event_time: string }).event_time,
+      };
+    }
+    return ev;
   } catch {
     return DEFAULT_EVENT;
   }
@@ -63,12 +95,26 @@ export async function getMenu(): Promise<MenuItem[]> {
   const c = publicClient();
   if (!c) return DEFAULT_MENU;
   try {
-    const { data } = await c
+    const day = await getFeaturedDay();
+
+    // Day-scoped menu (post-calendar-migration). Errors if offering_day column
+    // doesn't exist yet — in which case we fall back to all available items.
+    const dayQ = await c
+      .from("menu_items")
+      .select("*")
+      .eq("is_available", true)
+      .eq("offering_day", day)
+      .order("sort_order", { ascending: true });
+    if (!dayQ.error && dayQ.data && dayQ.data.length) {
+      return dayQ.data as MenuItem[];
+    }
+
+    const allQ = await c
       .from("menu_items")
       .select("*")
       .eq("is_available", true)
       .order("sort_order", { ascending: true });
-    return data && data.length ? (data as MenuItem[]) : DEFAULT_MENU;
+    return allQ.data && allQ.data.length ? (allQ.data as MenuItem[]) : DEFAULT_MENU;
   } catch {
     return DEFAULT_MENU;
   }
