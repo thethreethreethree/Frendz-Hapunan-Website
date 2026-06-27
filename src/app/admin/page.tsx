@@ -70,12 +70,20 @@ export default async function AdminDashboard() {
 
       {/* Bookings */}
       <section className="mb-12">
-        <h2 className="mb-3 font-display text-2xl font-extrabold text-brand-dark">
-          Bookings{" "}
-          <span className="text-base font-bold text-accent-dark">
-            ({pending.length} awaiting payment)
-          </span>
-        </h2>
+        <div className="mb-3 flex items-center justify-between gap-3">
+          <h2 className="font-display text-2xl font-extrabold text-brand-dark">
+            Bookings{" "}
+            <span className="text-base font-bold text-accent-dark">
+              ({pending.length} awaiting payment)
+            </span>
+          </h2>
+          <a
+            href="/api/admin/export"
+            className="shrink-0 rounded-full bg-leaf px-4 py-2 text-sm font-bold text-cream shadow hover:opacity-90"
+          >
+            ⬇ Export to Excel
+          </a>
+        </div>
         <div className="overflow-x-auto rounded-2xl border-2 border-ink/10">
           <table className="w-full min-w-[720px] text-left text-sm">
             <thead className="bg-cream-deep font-display text-maroon">

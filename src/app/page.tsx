@@ -31,7 +31,7 @@ export default async function Home() {
           <img
             src="/hero-poster.jpg"
             alt={`${event.event_name} — ${event.event_subtitle}`}
-            className="ink-card h-[160px] w-full rounded-2xl object-cover object-top sm:h-[230px] lg:h-[300px]"
+            className="ink-card w-full rounded-2xl"
           />
         </div>
       </section>
