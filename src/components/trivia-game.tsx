@@ -120,7 +120,7 @@ export function TriviaGame({ questions }: { questions: TriviaQuestion[] }) {
   if (finished) {
     const verdict =
       score === total
-        ? "Tunay na Pinoy foodie! Perfect score."
+        ? "Real Filipino Foodie! Perfect score."
         : score >= total * 0.7
           ? "Ang galing — you really know your Filipino food!"
           : score >= total * 0.4
