@@ -31,21 +31,33 @@ export default async function Home() {
           <img
             src="/hero-poster.jpg"
             alt={`${event.event_name} — ${event.event_subtitle}`}
-            className="ink-card w-full rounded-2xl"
+            className="ink-card h-[160px] w-full rounded-2xl object-cover object-top sm:h-[230px] lg:h-[300px]"
           />
         </div>
       </section>
 
-      {/* ── Action bar (CTAs only; event details live in the banner
-          and the menu intro, so no duplicate info chips here) ───── */}
+      {/* ── Action bar (admin-editable event details + CTAs) ───── */}
       <section className="border-b-4 border-inkline bg-brand text-cream">
-        <div className="mx-auto flex max-w-5xl flex-col items-center justify-center gap-3 px-6 py-5 sm:flex-row">
-          <CTAButton href="/book" tone="accent">
-            Reserve your seat
-          </CTAButton>
-          <CTAButton href="/trivia" tone="outline">
-            Play the Food Trivia
-          </CTAButton>
+        <div className="mx-auto flex max-w-5xl flex-col items-center gap-5 px-6 py-6 sm:flex-row sm:justify-between">
+          <div className="flex flex-wrap items-center justify-center gap-3 font-body font-semibold">
+            <span className="rounded-full bg-cream/15 px-4 py-2 ring-1 ring-cream/30">
+              📍 {event.location}
+            </span>
+            <span className="rounded-full bg-cream/15 px-4 py-2 ring-1 ring-cream/30">
+              🕢 {event.event_time}
+            </span>
+            <span className="rounded-full bg-cream px-4 py-2 font-display text-lg font-extrabold text-accent-dark">
+              {price} / pax
+            </span>
+          </div>
+          <div className="flex flex-col gap-3 sm:flex-row">
+            <CTAButton href="/book" tone="accent">
+              Reserve your seat
+            </CTAButton>
+            <CTAButton href="/trivia" tone="outline">
+              Play the Food Trivia
+            </CTAButton>
+          </div>
         </div>
       </section>
 
