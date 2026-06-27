@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { randomUUID } from "crypto";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { isValidCountry } from "@/lib/countries";
 
 export const runtime = "nodejs";
 
@@ -15,6 +16,8 @@ export async function POST(req: Request) {
   }
   const b = body as Record<string, unknown>;
   const name = String(b.player_name ?? "").trim().slice(0, 24);
+  const natRaw = String(b.nationality ?? "").trim().toLowerCase();
+  const nationality = isValidCountry(natRaw) ? natRaw : ""; // optional
   const correct = Number(b.correct);
   const total = Number(b.total);
   const time_ms = Number(b.time_ms);
@@ -48,7 +51,7 @@ export async function POST(req: Request) {
     entity_type: "trivia",
     entity_id: randomUUID(),
     actor: "public",
-    payload: { player_name: name, correct, total, time_ms },
+    payload: { player_name: name, nationality, correct, total, time_ms },
   });
   if (error) {
     return NextResponse.json({ error: "Could not save your score." }, { status: 500 });

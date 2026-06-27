@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { validateBooking, type GuestType } from "@/lib/booking";
+import { COUNTRIES } from "@/lib/countries";
 import { Banderitas, WovenStripe } from "@/components/decor";
 
 const fieldCls =
@@ -21,6 +22,8 @@ export default function BookPage() {
     setError("");
     const form = new FormData(e.currentTarget);
     const payload = {
+      name: String(form.get("name") ?? ""),
+      nationality: String(form.get("nationality") ?? ""),
       email: String(form.get("email") ?? ""),
       phone: String(form.get("phone") ?? ""),
       guest_type: (form.get("guest_type") ?? "") as GuestType,
@@ -76,6 +79,36 @@ export default function BookPage() {
         className="ink-card mx-auto my-10 max-w-2xl rounded-3xl bg-cream-deep/70 px-6 py-8 sm:px-10"
       >
         <div className="grid gap-5 sm:grid-cols-2">
+          <div>
+            <label className={labelCls} htmlFor="name">
+              Name
+            </label>
+            <input id="name" name="name" type="text" className={fieldCls} required />
+          </div>
+          <div>
+            <label className={labelCls} htmlFor="nationality">
+              Nationality
+            </label>
+            <select
+              id="nationality"
+              name="nationality"
+              className={fieldCls}
+              defaultValue=""
+              required
+            >
+              <option value="" disabled>
+                Select your country
+              </option>
+              {COUNTRIES.map((c) => (
+                <option key={c.code} value={c.code}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        <div className="mt-5 grid gap-5 sm:grid-cols-2">
           <div>
             <label className={labelCls} htmlFor="email">
               Email

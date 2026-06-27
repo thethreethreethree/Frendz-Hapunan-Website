@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import ExcelJS from "exceljs";
 import { getAdminUser } from "@/lib/auth";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { countryName } from "@/lib/countries";
 
 export const runtime = "nodejs";
 
@@ -25,6 +26,8 @@ export async function GET() {
   const ws = wb.addWorksheet("Orders");
   ws.columns = [
     { header: "Reference", key: "booking_reference", width: 14 },
+    { header: "Name", key: "name", width: 20 },
+    { header: "Nationality", key: "nationality", width: 18 },
     { header: "Status", key: "status", width: 16 },
     { header: "Guest type", key: "guest_type", width: 12 },
     { header: "Room #", key: "room_number", width: 10 },
@@ -37,7 +40,11 @@ export async function GET() {
   ];
   ws.getRow(1).font = { bold: true };
   for (const b of data ?? []) {
-    ws.addRow(b as Record<string, unknown>);
+    const row = b as Record<string, unknown>;
+    ws.addRow({
+      ...row,
+      nationality: countryName(String(row.nationality ?? "")),
+    });
   }
 
   const buf = await wb.xlsx.writeBuffer();

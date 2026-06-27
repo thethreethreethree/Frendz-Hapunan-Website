@@ -3,6 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import type { TriviaQuestion } from "@/lib/content";
+import { COUNTRIES } from "@/lib/countries";
+import { Flag } from "@/components/flag";
 
 type LeaderRow = {
   rank: number;
@@ -10,6 +12,7 @@ type LeaderRow = {
   correct: number;
   total: number;
   time_ms: number;
+  nationality?: string;
 };
 
 function fmt(ms: number) {
@@ -25,6 +28,7 @@ export function TriviaGame({ questions }: { questions: TriviaQuestion[] }) {
 
   // leaderboard / name submission state
   const [name, setName] = useState("");
+  const [country, setCountry] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState("");
@@ -63,6 +67,7 @@ export function TriviaGame({ questions }: { questions: TriviaQuestion[] }) {
     setFinished(false);
     setTimeMs(0);
     setName("");
+    setCountry("");
     setSubmitting(false);
     setSubmitted(false);
     setError("");
@@ -96,6 +101,7 @@ export function TriviaGame({ questions }: { questions: TriviaQuestion[] }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           player_name: trimmed,
+          nationality: country,
           correct: score,
           total,
           time_ms: timeMs,
@@ -146,7 +152,7 @@ export function TriviaGame({ questions }: { questions: TriviaQuestion[] }) {
               <label className="block font-display text-sm font-bold text-maroon">
                 Add your name to the leaderboard
               </label>
-              <div className="mt-2 flex flex-col gap-2 sm:flex-row">
+              <div className="mt-2 flex flex-col gap-2">
                 <input
                   value={name}
                   onChange={(e) => setName(e.target.value)}
@@ -154,10 +160,22 @@ export function TriviaGame({ questions }: { questions: TriviaQuestion[] }) {
                   placeholder="Your name"
                   className="w-full rounded-xl border-2 border-ink/15 bg-white px-4 py-3 text-ink outline-none focus:border-brand"
                 />
+                <select
+                  value={country}
+                  onChange={(e) => setCountry(e.target.value)}
+                  className="w-full rounded-xl border-2 border-ink/15 bg-white px-4 py-3 text-ink outline-none focus:border-brand"
+                >
+                  <option value="">Country (optional)</option>
+                  {COUNTRIES.map((c) => (
+                    <option key={c.code} value={c.code}>
+                      {c.name}
+                    </option>
+                  ))}
+                </select>
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="shrink-0 rounded-full bg-brand px-6 py-3 font-display font-extrabold text-cream shadow-lg disabled:opacity-60"
+                  className="rounded-full bg-brand px-6 py-3 font-display font-extrabold text-cream shadow-lg disabled:opacity-60"
                 >
                   {submitting ? "Saving…" : "Submit"}
                 </button>
@@ -199,10 +217,13 @@ export function TriviaGame({ questions }: { questions: TriviaQuestion[] }) {
                       mine ? "bg-accent/20 font-extrabold" : "bg-white/60"
                     }`}
                   >
-                    <span className="flex items-center gap-3">
+                    <span className="flex items-center gap-2">
                       <span className="w-6 text-center font-display font-extrabold text-accent-dark">
                         {e.rank}
                       </span>
+                      {e.nationality ? (
+                        <Flag code={e.nationality} size={22} />
+                      ) : null}
                       <span className="truncate">{e.player_name}</span>
                     </span>
                     <span className="shrink-0 font-semibold text-ink/80">

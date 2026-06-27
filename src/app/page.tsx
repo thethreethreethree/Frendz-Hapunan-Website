@@ -1,8 +1,9 @@
 import Link from "next/link";
-import { getEventSettings, getMenu } from "@/lib/data";
+import { getAttendeeFlags, getEventSettings, getMenu } from "@/lib/data";
 import { imageForMenuItem } from "@/lib/content";
 import { WovenStripe } from "@/components/decor";
 import { CTAButton, CourseCard, Pill } from "@/components/ui";
+import { Flag } from "@/components/flag";
 
 // Public page reads admin-editable content; render fresh so menu/price edits show.
 export const dynamic = "force-dynamic";
@@ -17,8 +18,14 @@ function toneFor(category: string, i: number): "teal" | "orange" {
 }
 
 export default async function Home() {
-  const [event, menu] = await Promise.all([getEventSettings(), getMenu()]);
+  const [event, menu, flags] = await Promise.all([
+    getEventSettings(),
+    getMenu(),
+    getAttendeeFlags(),
+  ]);
   const price = `${event.currency}${event.price_per_pax}`;
+  const totalAttendees = flags.reduce((s, f) => s + (f.count ?? 0), 0);
+  const showFlags = event.show_attendee_flags !== false && flags.length > 0;
 
   return (
     <main className="flex-1">
@@ -117,6 +124,38 @@ export default async function Home() {
           </div>
         </div>
       </section>
+
+      {/* ── Who's joining (flag wall) ────────────────────────── */}
+      {showFlags && (
+        <>
+          <WovenStripe />
+          <section className="bg-cream">
+            <div className="mx-auto max-w-4xl px-6 py-12 text-center">
+              <Pill tone="teal">Who is joining</Pill>
+              <h2 className="ink-title mt-4 font-display text-3xl font-extrabold text-maroon sm:text-4xl">
+                Guests from around the world
+              </h2>
+              <p className="mt-2 text-ink/70">
+                {totalAttendees} {totalAttendees === 1 ? "guest" : "guests"} joining
+                so far — from {flags.length}{" "}
+                {flags.length === 1 ? "country" : "countries"}.
+              </p>
+              <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
+                {flags.map((f) => (
+                  <div key={f.nationality} className="relative">
+                    <Flag code={f.nationality} size={48} />
+                    {f.count > 1 && (
+                      <span className="absolute -bottom-1 -right-1 grid h-5 min-w-5 place-items-center rounded-full bg-accent px-1 text-xs font-extrabold text-cream">
+                        {f.count}
+                      </span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </section>
+        </>
+      )}
 
       {/* ── Closing CTA ──────────────────────────────────────── */}
       <WovenStripe />

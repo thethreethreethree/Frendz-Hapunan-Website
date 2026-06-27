@@ -34,6 +34,8 @@ export async function POST(req: Request) {
   const { data, error } = await supabase
     .from("bookings")
     .insert({
+      name: b.name,
+      nationality: b.nationality,
       email: b.email,
       phone: b.phone,
       guest_type: b.guest_type,

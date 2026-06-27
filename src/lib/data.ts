@@ -18,6 +18,24 @@ function publicClient() {
   return createClient(url, key, { auth: { persistSession: false } });
 }
 
+export type AttendeeFlag = { nationality: string; count: number };
+
+// Public flag wall — nationality codes + counts only (no PII), via the
+// get_attendee_flags() SECURITY DEFINER function (§3.2 RLS intact).
+export async function getAttendeeFlags(): Promise<AttendeeFlag[]> {
+  const c = publicClient();
+  if (!c) return [];
+  try {
+    const { data, error } = await c.rpc("get_attendee_flags");
+    if (error || !data) return [];
+    return (data as AttendeeFlag[]).filter(
+      (f) => f && typeof f.nationality === "string" && f.nationality.length > 0,
+    );
+  } catch {
+    return [];
+  }
+}
+
 export async function getFeaturedDay(): Promise<string> {
   const c = publicClient();
   if (!c) return "friday";

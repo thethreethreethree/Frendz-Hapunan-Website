@@ -7,16 +7,21 @@ import {
   saveDailyOffering,
   saveEventSettings,
   saveMenuItem,
+  setAttendeeFlags,
   setBookingStatus,
   setFeaturedDay,
   signOutAction,
 } from "./actions";
+import { Flag } from "@/components/flag";
+import { countryName } from "@/lib/countries";
 
 export const dynamic = "force-dynamic";
 
 type Booking = {
   id: string;
   booking_reference: string;
+  name: string;
+  nationality: string;
   email: string;
   phone: string;
   guest_type: string;
@@ -352,6 +357,7 @@ export default async function AdminDashboard({
             <thead className="bg-cream-deep font-display text-maroon">
               <tr>
                 <th className="px-3 py-2">Ref</th>
+                <th className="px-3 py-2">Name</th>
                 <th className="px-3 py-2">Guest</th>
                 <th className="px-3 py-2">Contact</th>
                 <th className="px-3 py-2">Allergies / request</th>
@@ -362,7 +368,7 @@ export default async function AdminDashboard({
             <tbody>
               {rows.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="px-3 py-6 text-center text-ink/50">
+                  <td colSpan={7} className="px-3 py-6 text-center text-ink/50">
                     No bookings yet.
                   </td>
                 </tr>
@@ -371,6 +377,19 @@ export default async function AdminDashboard({
                 <tr key={b.id} className="border-t border-ink/10 align-top">
                   <td className="px-3 py-2 font-mono font-bold">
                     {b.booking_reference}
+                  </td>
+                  <td className="px-3 py-2">
+                    <div className="flex items-center gap-2">
+                      {b.nationality ? (
+                        <Flag code={b.nationality} size={20} />
+                      ) : null}
+                      <span className="font-semibold">{b.name || "—"}</span>
+                    </div>
+                    {b.nationality ? (
+                      <div className="text-xs text-ink/50">
+                        {countryName(b.nationality)}
+                      </div>
+                    ) : null}
                   </td>
                   <td className="px-3 py-2">
                     {b.guest_type === "frendz"
@@ -470,6 +489,30 @@ export default async function AdminDashboard({
             )}
           </div>
         </div>
+      </section>
+
+      {/* ── Attendee flag wall toggle ────────────────────────── */}
+      <section className="mb-12">
+        <h2 className="mb-3 font-display text-2xl font-extrabold text-brand-dark">
+          Attendee flag wall
+        </h2>
+        <form
+          action={setAttendeeFlags}
+          className="flex flex-wrap items-center gap-4 rounded-2xl border-2 border-ink/10 bg-cream-deep/40 p-5"
+        >
+          <label className="flex items-center gap-2 text-sm font-bold text-maroon">
+            <input
+              type="checkbox"
+              name="show_attendee_flags"
+              defaultChecked={settings?.show_attendee_flags !== false}
+              className="accent-brand"
+            />
+            Show guests&apos; country flags on the public home page
+          </label>
+          <button className="rounded-full bg-brand px-5 py-2 text-sm font-bold text-cream">
+            Save
+          </button>
+        </form>
       </section>
 
       {/* ── Event details (shared across all days) ───────────── */}

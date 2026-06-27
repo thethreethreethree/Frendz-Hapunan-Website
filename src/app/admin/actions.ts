@@ -82,6 +82,17 @@ export async function setFeaturedDay(day: string) {
   revalidatePath("/");
 }
 
+export async function setAttendeeFlags(formData: FormData) {
+  await ensureAdmin();
+  const db = createSupabaseAdminClient();
+  await db
+    .from("event_settings")
+    .update({ show_attendee_flags: formData.get("show_attendee_flags") === "on" })
+    .eq("id", 1);
+  revalidatePath("/admin");
+  revalidatePath("/");
+}
+
 export async function saveMenuItem(id: string, formData: FormData) {
   const user = await ensureAdmin();
   const db = createSupabaseAdminClient();

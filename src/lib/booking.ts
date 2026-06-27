@@ -1,9 +1,13 @@
 // Single booking-validation source, consumed by BOTH the client form and the
 // server API route (A16 — multiple surfaces on the same data must share one contract).
 
+import { isValidCountry } from "./countries";
+
 export type GuestType = "frendz" | "outside";
 
 export type BookingInput = {
+  name: string;
+  nationality: string;
   email: string;
   phone: string;
   guest_type: GuestType;
@@ -18,12 +22,20 @@ export type ValidateResult =
   | { ok: false; error: string };
 
 export function validateBooking(b: Partial<BookingInput>): ValidateResult {
+  const name = (b.name ?? "").trim();
+  const nationality = (b.nationality ?? "").trim().toLowerCase();
   const email = (b.email ?? "").trim();
   const phone = (b.phone ?? "").trim();
   const guest_type = b.guest_type;
   const room_number = (b.room_number ?? "").trim();
   const accommodation = (b.accommodation ?? "").trim();
 
+  if (!name) {
+    return { ok: false, error: "Please enter your name." };
+  }
+  if (!nationality || !isValidCountry(nationality)) {
+    return { ok: false, error: "Please select your nationality." };
+  }
   if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
     return { ok: false, error: "Please enter a valid email address." };
   }
@@ -43,6 +55,8 @@ export function validateBooking(b: Partial<BookingInput>): ValidateResult {
   return {
     ok: true,
     value: {
+      name,
+      nationality,
       email,
       phone,
       guest_type,

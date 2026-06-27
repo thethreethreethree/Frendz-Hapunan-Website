@@ -12,6 +12,8 @@ export type EventSettings = {
   price_per_pax: number;
   currency: string;
   reception_instructions: string;
+  show_attendee_flags?: boolean;
+  featured_day?: string;
 };
 
 export type MenuItem = {
@@ -57,6 +59,8 @@ export const DEFAULT_EVENT: EventSettings = {
   currency: "₱",
   reception_instructions:
     "Please proceed to the Frendz Hostel reception to complete your payment and confirm your seat. Once payment is received, your booking will be marked Confirmed here.",
+  show_attendee_flags: true,
+  featured_day: "friday",
 };
 
 export const DEFAULT_MENU: MenuItem[] = [

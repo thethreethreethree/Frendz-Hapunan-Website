@@ -9,6 +9,7 @@ type Entry = {
   correct: number;
   total: number;
   time_ms: number;
+  nationality?: string;
 };
 
 // Ranking: most correct first, then fastest total time (founder decision).
