@@ -36,6 +36,54 @@ export async function getAttendeeFlags(): Promise<AttendeeFlag[]> {
   }
 }
 
+const DAY_ORDER = [
+  "sunday",
+  "monday",
+  "tuesday",
+  "wednesday",
+  "thursday",
+  "friday",
+  "saturday",
+];
+
+// Current weekday index (0=Sunday) in Philippine time (the event's timezone).
+function manilaWeekdayIndex(): number {
+  try {
+    const wd = new Intl.DateTimeFormat("en-US", {
+      timeZone: "Asia/Manila",
+      weekday: "long",
+    }).format(new Date());
+    const i = DAY_ORDER.indexOf(wd.toLowerCase());
+    return i < 0 ? 5 : i;
+  } catch {
+    return 5; // friday
+  }
+}
+
+// The day shown publicly: the closest upcoming ACTIVE day from today (PH time),
+// today inclusive. This drives both the menu and its label. Falls back to friday.
+export async function getNextActiveDay(): Promise<string> {
+  const c = publicClient();
+  if (!c) return "friday";
+  try {
+    const { data } = await c.from("daily_offerings").select("day,is_active");
+    const active = new Set(
+      (data ?? [])
+        .filter((d) => (d as { is_active: boolean }).is_active)
+        .map((d) => (d as { day: string }).day),
+    );
+    if (active.size === 0) return "friday";
+    const today = manilaWeekdayIndex();
+    for (let i = 0; i < 7; i++) {
+      const name = DAY_ORDER[(today + i) % 7];
+      if (active.has(name)) return name;
+    }
+    return "friday";
+  } catch {
+    return "friday";
+  }
+}
+
 export async function getFeaturedDay(): Promise<string> {
   const c = publicClient();
   if (!c) return "friday";
@@ -52,7 +100,7 @@ export async function getFeaturedDay(): Promise<string> {
   }
 }
 
-export async function getEventSettings(): Promise<EventSettings> {
+export async function getEventSettings(day?: string): Promise<EventSettings> {
   const c = publicClient();
   if (!c) return DEFAULT_EVENT;
   try {
@@ -63,12 +111,12 @@ export async function getEventSettings(): Promise<EventSettings> {
       .single();
     let ev = (data as EventSettings) ?? DEFAULT_EVENT;
 
-    // Post-calendar-migration: price + time come from the featured day's offering.
-    const day = (data as { featured_day?: string } | null)?.featured_day || "friday";
+    // Price + time come from the shown day's offering (closest active day).
+    const d = day ?? (await getNextActiveDay());
     const off = await c
       .from("daily_offerings")
       .select("price_per_pax,event_time")
-      .eq("day", day)
+      .eq("day", d)
       .single();
     if (!off.error && off.data) {
       ev = {
@@ -109,11 +157,11 @@ export async function getBookingByReference(
   }
 }
 
-export async function getMenu(): Promise<MenuItem[]> {
+export async function getMenu(day?: string): Promise<MenuItem[]> {
   const c = publicClient();
   if (!c) return DEFAULT_MENU;
   try {
-    const day = await getFeaturedDay();
+    const d = day ?? (await getNextActiveDay());
 
     // Day-scoped menu (post-calendar-migration). Errors if offering_day column
     // doesn't exist yet — in which case we fall back to all available items.
@@ -121,7 +169,7 @@ export async function getMenu(): Promise<MenuItem[]> {
       .from("menu_items")
       .select("*")
       .eq("is_available", true)
-      .eq("offering_day", day)
+      .eq("offering_day", d)
       .order("sort_order", { ascending: true });
     if (!dayQ.error && dayQ.data && dayQ.data.length) {
       return dayQ.data as MenuItem[];

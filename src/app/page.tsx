@@ -1,5 +1,10 @@
 import Link from "next/link";
-import { getAttendeeFlags, getEventSettings, getMenu } from "@/lib/data";
+import {
+  getAttendeeFlags,
+  getEventSettings,
+  getMenu,
+  getNextActiveDay,
+} from "@/lib/data";
 import { imageForMenuItem } from "@/lib/content";
 import { WovenStripe } from "@/components/decor";
 import { CTAButton, CourseCard, Pill } from "@/components/ui";
@@ -18,11 +23,13 @@ function toneFor(category: string, i: number): "teal" | "orange" {
 }
 
 export default async function Home() {
+  const day = await getNextActiveDay();
   const [event, menu, flags] = await Promise.all([
-    getEventSettings(),
-    getMenu(),
+    getEventSettings(day),
+    getMenu(day),
     getAttendeeFlags(),
   ]);
+  const dayName = day.charAt(0).toUpperCase() + day.slice(1);
   const price = `${event.currency}${event.price_per_pax}`;
   const totalAttendees = flags.reduce((s, f) => s + (f.count ?? 0), 0);
   const showFlags = event.show_attendee_flags !== false && flags.length > 0;
@@ -75,7 +82,7 @@ export default async function Home() {
       {/* ── Menu ─────────────────────────────────────────────── */}
       <section className="relative mx-auto max-w-6xl px-6 py-16">
         <div className="mb-10 text-center">
-          <Pill tone="orange">Tonight on the table</Pill>
+          <Pill tone="orange">{`${dayName}'s Menu`}</Pill>
           <h2 className="ink-title mt-4 font-display text-4xl font-extrabold text-maroon">
             The Hapunan Set Menu
           </h2>
