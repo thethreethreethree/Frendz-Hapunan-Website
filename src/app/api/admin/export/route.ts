@@ -35,6 +35,25 @@ export async function GET() {
   const sessionOf = (createdAt: string) =>
     cutoffs.filter((c) => c < createdAt).length + 1;
 
+  // Payment method per booking (from the mark-paid events, newest wins).
+  const { data: payEvents } = await db
+    .from("events")
+    .select("entity_id,payload")
+    .eq("event_type", "booking.status_changed")
+    .order("created_at", { ascending: false });
+  const payMap: Record<string, { method?: string; detail?: string }> = {};
+  for (const e of (payEvents ?? []) as {
+    entity_id: string;
+    payload: { payment_method?: string; payment_detail?: string };
+  }[]) {
+    if (!payMap[e.entity_id] && e.payload?.payment_method) {
+      payMap[e.entity_id] = {
+        method: e.payload.payment_method,
+        detail: e.payload.payment_detail,
+      };
+    }
+  }
+
   const wb = new ExcelJS.Workbook();
   const ws = wb.addWorksheet("Orders");
   ws.columns = [
@@ -43,6 +62,8 @@ export async function GET() {
     { header: "Name", key: "name", width: 20 },
     { header: "Nationality", key: "nationality", width: 18 },
     { header: "Status", key: "status", width: 16 },
+    { header: "Payment method", key: "payment_method", width: 16 },
+    { header: "Payment detail", key: "payment_detail", width: 20 },
     { header: "Guest type", key: "guest_type", width: 12 },
     { header: "Room #", key: "room_number", width: 10 },
     { header: "Accommodation", key: "accommodation", width: 26 },
@@ -59,6 +80,8 @@ export async function GET() {
       ...row,
       session: sessionOf(String(row.created_at ?? "")),
       nationality: countryName(String(row.nationality ?? "")),
+      payment_method: payMap[String(row.id)]?.method ?? "",
+      payment_detail: payMap[String(row.id)]?.detail ?? "",
     });
   }
 

@@ -5,6 +5,7 @@ import {
   addMenuItem,
   closeSession,
   deleteMenuItem,
+  markBookingPaid,
   saveDailyOffering,
   saveEventSettings,
   saveMenuItem,
@@ -97,6 +98,7 @@ export default async function AdminDashboard({
     { count: scanCount },
     { data: recentScans },
     { data: closedSessions },
+    { data: paymentEvents },
   ] = await Promise.all([
     db.from("bookings").select("*").order("created_at", { ascending: false }),
     db.from("daily_offerings").select("*"),
@@ -116,7 +118,29 @@ export default async function AdminDashboard({
       .select("created_at,payload")
       .eq("event_type", "session.closed")
       .order("created_at", { ascending: false }),
+    db
+      .from("events")
+      .select("entity_id,payload")
+      .eq("event_type", "booking.status_changed")
+      .order("created_at", { ascending: false }),
   ]);
+
+  // Latest recorded payment method per booking (newest event wins).
+  const paymentMap: Record<
+    string,
+    { payment_method?: string; payment_detail?: string }
+  > = {};
+  for (const e of (paymentEvents ?? []) as {
+    entity_id: string;
+    payload: { payment_method?: string; payment_detail?: string };
+  }[]) {
+    if (!paymentMap[e.entity_id] && e.payload?.payment_method) {
+      paymentMap[e.entity_id] = {
+        payment_method: e.payload.payment_method,
+        payment_detail: e.payload.payment_detail,
+      };
+    }
+  }
 
   const featured: string = settings?.featured_day ?? "friday";
   const selectedDay =
@@ -392,13 +416,14 @@ export default async function AdminDashboard({
                 <th className="px-3 py-2">Contact</th>
                 <th className="px-3 py-2">Allergies / request</th>
                 <th className="px-3 py-2">Status</th>
+                <th className="px-3 py-2">Payment</th>
                 <th className="px-3 py-2">Action</th>
               </tr>
             </thead>
             <tbody>
               {rows.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="px-3 py-6 text-center text-ink/50">
+                  <td colSpan={8} className="px-3 py-6 text-center text-ink/50">
                     No bookings yet.
                   </td>
                 </tr>
@@ -448,13 +473,40 @@ export default async function AdminDashboard({
                       {b.status.replace("_", " ")}
                     </span>
                   </td>
+                  <td className="px-3 py-2 text-xs">
+                    {b.status === "confirmed" &&
+                    paymentMap[b.id]?.payment_method ? (
+                      <span className="font-bold text-brand-dark">
+                        {paymentMap[b.id].payment_method}
+                        {paymentMap[b.id].payment_detail
+                          ? ` · ${paymentMap[b.id].payment_detail}`
+                          : ""}
+                      </span>
+                    ) : (
+                      <span className="text-ink/40">—</span>
+                    )}
+                  </td>
                   <td className="px-3 py-2">
                     {b.status !== "confirmed" && (
                       <form
-                        action={setBookingStatus.bind(null, b.id, "confirmed")}
-                        className="inline"
+                        action={markBookingPaid.bind(null, b.id)}
+                        className="flex flex-col gap-1"
                       >
-                        <button className="mr-1 rounded-full bg-brand px-3 py-1.5 text-xs font-bold text-cream">
+                        <select
+                          name="payment_method"
+                          defaultValue="Cash"
+                          className="rounded border-2 border-ink/15 bg-white px-2 py-1 text-xs"
+                        >
+                          <option value="Cash">Cash</option>
+                          <option value="Card">Card</option>
+                          <option value="Other">Other</option>
+                        </select>
+                        <input
+                          name="payment_detail"
+                          placeholder="detail (if Other)"
+                          className="w-32 rounded border-2 border-ink/15 bg-white px-2 py-1 text-xs"
+                        />
+                        <button className="rounded-full bg-brand px-3 py-1.5 text-xs font-bold text-cream">
                           Mark paid
                         </button>
                       </form>
@@ -462,7 +514,7 @@ export default async function AdminDashboard({
                     {b.status !== "cancelled" && (
                       <form
                         action={setBookingStatus.bind(null, b.id, "cancelled")}
-                        className="inline"
+                        className="mt-1 inline-block"
                       >
                         <button className="rounded-full border-2 border-ink/20 px-3 py-1.5 text-xs font-bold text-ink/60">
                           Cancel

@@ -37,6 +37,28 @@ export async function setBookingStatus(id: string, status: "confirmed" | "cancel
   revalidatePath("/admin");
 }
 
+// Mark a booking paid AND record how it was paid (Cash / Card / Other + detail),
+// stored on the append-only status-change event (§3.1). No schema change needed.
+export async function markBookingPaid(id: string, formData: FormData) {
+  const user = await ensureAdmin();
+  const db = createSupabaseAdminClient();
+  const method = String(formData.get("payment_method") ?? "Cash");
+  const detail = String(formData.get("payment_detail") ?? "").trim();
+  await db.from("bookings").update({ status: "confirmed" }).eq("id", id);
+  await db.from("events").insert({
+    event_type: "booking.status_changed",
+    entity_type: "booking",
+    entity_id: id,
+    actor: `admin:${user.id}`,
+    payload: {
+      status: "confirmed",
+      payment_method: method,
+      payment_detail: detail,
+    },
+  });
+  revalidatePath("/admin");
+}
+
 export async function saveEventSettings(formData: FormData) {
   const user = await ensureAdmin();
   const db = createSupabaseAdminClient();
