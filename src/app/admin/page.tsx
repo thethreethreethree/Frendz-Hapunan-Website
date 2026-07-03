@@ -168,6 +168,31 @@ export default async function AdminDashboard({
   const selOff = offerings[selectedDay];
   const pending = rows.filter((b) => b.status === "pending_payment");
 
+  // ── Analytics (current session) ──────────────────────────────────
+  const confirmedRows = rows.filter((b) => b.status === "confirmed");
+  const cancelledCount = rows.filter((b) => b.status === "cancelled").length;
+  const notCancelled = rows.filter((b) => b.status !== "cancelled");
+  const payCounts = { Cash: 0, Card: 0, Other: 0, Unspecified: 0 };
+  for (const b of confirmedRows) {
+    const m = paymentMap[b.id]?.payment_method;
+    if (m === "Cash" || m === "Card" || m === "Other") payCounts[m] += 1;
+    else payCounts.Unspecified += 1;
+  }
+  const paySegments = [
+    { key: "Cash", count: payCounts.Cash, color: "#3a9d4b" },
+    { key: "Card", count: payCounts.Card, color: "#2a6fb0" },
+    { key: "Other", count: payCounts.Other, color: "#e2641f" },
+    { key: "Unspecified", count: payCounts.Unspecified, color: "#9ca3af" },
+  ];
+  const payTotal = confirmedRows.length;
+  const frendzCount = notCancelled.filter((b) => b.guest_type === "frendz").length;
+  const outsideCount = notCancelled.filter((b) => b.guest_type === "outside").length;
+  const natCounts: Record<string, number> = {};
+  for (const b of notCancelled) {
+    if (b.nationality) natCounts[b.nationality] = (natCounts[b.nationality] ?? 0) + 1;
+  }
+  const topNats = Object.entries(natCounts).sort((a, b) => b[1] - a[1]);
+
   return (
     <main className="mx-auto w-full max-w-5xl flex-1 px-5 py-8">
       <header className="mb-8 flex items-center justify-between">
@@ -544,6 +569,124 @@ export default async function AdminDashboard({
             </ul>
           </div>
         )}
+      </section>
+
+      {/* ── Analytics (current session) ──────────────────────── */}
+      <section className="mb-12">
+        <h2 className="mb-1 font-display text-2xl font-extrabold text-brand-dark">
+          Analytics
+        </h2>
+        <p className="mb-3 text-sm text-ink/60">
+          Current session #{currentSessionNumber}. All sessions stay in the Excel
+          export.
+        </p>
+
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          {[
+            { label: "Bookings", value: rows.length },
+            { label: "Confirmed", value: confirmedRows.length },
+            { label: "Awaiting payment", value: pending.length },
+            { label: "Cancelled", value: cancelledCount },
+          ].map((t) => (
+            <div
+              key={t.label}
+              className="rounded-2xl border-2 border-ink/10 bg-white/70 p-4 text-center"
+            >
+              <div className="font-display text-3xl font-extrabold text-maroon">
+                {t.value}
+              </div>
+              <div className="text-xs font-bold uppercase tracking-wide text-ink/50">
+                {t.label}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div className="mt-5 grid gap-5 sm:grid-cols-2">
+          {/* Payment breakdown */}
+          <div className="rounded-2xl border-2 border-ink/10 bg-white/70 p-4">
+            <h3 className="mb-3 font-display font-extrabold text-maroon">
+              Payments{" "}
+              <span className="text-sm font-bold text-ink/40">
+                ({payTotal} confirmed)
+              </span>
+            </h3>
+            {payTotal === 0 ? (
+              <p className="text-sm text-ink/50">
+                No confirmed payments this session yet.
+              </p>
+            ) : (
+              <>
+                <div className="flex h-5 w-full overflow-hidden rounded-full bg-ink/10">
+                  {paySegments
+                    .filter((s) => s.count > 0)
+                    .map((s) => (
+                      <div
+                        key={s.key}
+                        style={{
+                          width: `${(s.count / payTotal) * 100}%`,
+                          backgroundColor: s.color,
+                        }}
+                        className="border-r-2 border-white last:border-r-0"
+                      />
+                    ))}
+                </div>
+                <ul className="mt-3 grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
+                  {paySegments.map((s) => (
+                    <li key={s.key} className="flex items-center gap-2">
+                      <span
+                        className="h-3 w-3 shrink-0 rounded-full"
+                        style={{ backgroundColor: s.color }}
+                      />
+                      <span className="font-semibold text-ink/80">{s.key}</span>
+                      <span className="ml-auto font-bold text-ink/60">
+                        {s.count}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </>
+            )}
+          </div>
+
+          {/* Guests */}
+          <div className="rounded-2xl border-2 border-ink/10 bg-white/70 p-4">
+            <h3 className="mb-3 font-display font-extrabold text-maroon">Guests</h3>
+            <div className="flex gap-3">
+              <div className="flex-1 rounded-xl bg-brand/10 p-3 text-center">
+                <div className="font-display text-2xl font-extrabold text-brand-dark">
+                  {frendzCount}
+                </div>
+                <div className="text-xs font-bold text-ink/50">Frendz</div>
+              </div>
+              <div className="flex-1 rounded-xl bg-accent/10 p-3 text-center">
+                <div className="font-display text-2xl font-extrabold text-accent-dark">
+                  {outsideCount}
+                </div>
+                <div className="text-xs font-bold text-ink/50">Outside</div>
+              </div>
+            </div>
+            {topNats.length > 0 && (
+              <div className="mt-4">
+                <p className="mb-2 text-xs font-bold uppercase tracking-wide text-ink/50">
+                  By nationality
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {topNats.map(([code, n]) => (
+                    <span
+                      key={code}
+                      className="flex items-center gap-1.5 rounded-full bg-cream-deep/60 px-2 py-1 text-sm"
+                      title={countryName(code)}
+                    >
+                      <Flag code={code} size={20} />
+                      <span className="font-semibold text-ink/70">{n}</span>
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
       </section>
 
       {/* ── Website QR code + scans ──────────────────────────── */}
