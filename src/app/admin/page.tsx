@@ -193,6 +193,38 @@ export default async function AdminDashboard({
   }
   const topNats = Object.entries(natCounts).sort((a, b) => b[1] - a[1]);
 
+  // Revenue estimate (confirmed × the standard event price).
+  const currency = settings?.currency ?? "₱";
+  const priceForRevenue = Number(
+    offerings[featured]?.price_per_pax ?? selOff?.price_per_pax ?? 499,
+  );
+  const estRevenue = confirmedRows.length * priceForRevenue;
+
+  // Per-session payment breakdown (all sessions).
+  const cutoffsAsc = [...closes].map((c) => c.created_at).sort();
+  const sessionOfBooking = (createdAt: string) =>
+    cutoffsAsc.filter((c) => c < createdAt).length + 1;
+  const perSession: Record<
+    number,
+    { Cash: number; Card: number; Other: number; Unspecified: number }
+  > = {};
+  for (const b of allRows) {
+    if (b.status !== "confirmed") continue;
+    const s = sessionOfBooking(b.created_at);
+    perSession[s] ??= { Cash: 0, Card: 0, Other: 0, Unspecified: 0 };
+    const m = paymentMap[b.id]?.payment_method;
+    const key =
+      m === "Cash" || m === "Card" || m === "Other" ? m : "Unspecified";
+    perSession[s][key] += 1;
+  }
+  const perSessionRows = Object.entries(perSession)
+    .map(([s, v]) => ({
+      session: Number(s),
+      ...v,
+      total: v.Cash + v.Card + v.Other + v.Unspecified,
+    }))
+    .sort((a, b) => b.session - a.session);
+
   return (
     <main className="mx-auto w-full max-w-5xl flex-1 px-5 py-8">
       <header className="mb-8 flex items-center justify-between">
@@ -602,6 +634,17 @@ export default async function AdminDashboard({
           ))}
         </div>
 
+        <div className="mt-3 rounded-2xl border-2 border-brand/30 bg-brand/5 p-4 text-center">
+          <span className="font-display text-2xl font-extrabold text-brand-dark">
+            ≈ {currency}
+            {estRevenue.toLocaleString()}
+          </span>
+          <span className="ml-2 text-sm text-ink/60">
+            estimated revenue ({confirmedRows.length} confirmed × {currency}
+            {priceForRevenue})
+          </span>
+        </div>
+
         <div className="mt-5 grid gap-5 sm:grid-cols-2">
           {/* Payment breakdown */}
           <div className="rounded-2xl border-2 border-ink/10 bg-white/70 p-4">
@@ -687,6 +730,48 @@ export default async function AdminDashboard({
             )}
           </div>
         </div>
+
+        {perSessionRows.length > 0 && (
+          <div className="mt-5">
+            <h3 className="mb-2 font-display font-extrabold text-maroon">
+              Payments by session
+            </h3>
+            <div className="overflow-x-auto rounded-2xl border-2 border-ink/10">
+              <table className="w-full min-w-[460px] text-left text-sm">
+                <thead className="bg-cream-deep font-display text-maroon">
+                  <tr>
+                    <th className="px-3 py-2">Session</th>
+                    <th className="px-3 py-2">Cash</th>
+                    <th className="px-3 py-2">Card</th>
+                    <th className="px-3 py-2">Other</th>
+                    <th className="px-3 py-2">Unspec.</th>
+                    <th className="px-3 py-2">Confirmed</th>
+                    <th className="px-3 py-2">Est. revenue</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {perSessionRows.map((r) => (
+                    <tr key={r.session} className="border-t border-ink/10">
+                      <td className="px-3 py-2 font-bold">
+                        #{r.session}
+                        {r.session === currentSessionNumber ? " (current)" : ""}
+                      </td>
+                      <td className="px-3 py-2">{r.Cash}</td>
+                      <td className="px-3 py-2">{r.Card}</td>
+                      <td className="px-3 py-2">{r.Other}</td>
+                      <td className="px-3 py-2 text-ink/50">{r.Unspecified}</td>
+                      <td className="px-3 py-2 font-bold">{r.total}</td>
+                      <td className="px-3 py-2">
+                        {currency}
+                        {(r.total * priceForRevenue).toLocaleString()}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
       </section>
 
       {/* ── Website QR code + scans ──────────────────────────── */}
