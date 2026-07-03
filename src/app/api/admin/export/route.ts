@@ -22,9 +22,23 @@ export async function GET() {
     return new NextResponse("Could not load orders.", { status: 500 });
   }
 
+  // Session boundaries (for analytics): a booking belongs to session
+  // (number of closes before it) + 1.
+  const { data: closes } = await db
+    .from("events")
+    .select("created_at")
+    .eq("event_type", "session.closed")
+    .order("created_at", { ascending: true });
+  const cutoffs = (closes ?? []).map(
+    (c) => (c as { created_at: string }).created_at,
+  );
+  const sessionOf = (createdAt: string) =>
+    cutoffs.filter((c) => c < createdAt).length + 1;
+
   const wb = new ExcelJS.Workbook();
   const ws = wb.addWorksheet("Orders");
   ws.columns = [
+    { header: "Session", key: "session", width: 9 },
     { header: "Reference", key: "booking_reference", width: 14 },
     { header: "Name", key: "name", width: 20 },
     { header: "Nationality", key: "nationality", width: 18 },
@@ -43,6 +57,7 @@ export async function GET() {
     const row = b as Record<string, unknown>;
     ws.addRow({
       ...row,
+      session: sessionOf(String(row.created_at ?? "")),
       nationality: countryName(String(row.nationality ?? "")),
     });
   }

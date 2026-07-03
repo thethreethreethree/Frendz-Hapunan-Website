@@ -3,6 +3,7 @@ import { getAdminUser } from "@/lib/auth";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import {
   addMenuItem,
+  closeSession,
   deleteMenuItem,
   saveDailyOffering,
   saveEventSettings,
@@ -12,6 +13,7 @@ import {
   setFeaturedDay,
   signOutAction,
 } from "./actions";
+import { CloseSessionButton } from "./close-session-button";
 import { Flag } from "@/components/flag";
 import { countryName } from "@/lib/countries";
 
@@ -94,6 +96,7 @@ export default async function AdminDashboard({
     { data: settings },
     { count: scanCount },
     { data: recentScans },
+    { data: closedSessions },
   ] = await Promise.all([
     db.from("bookings").select("*").order("created_at", { ascending: false }),
     db.from("daily_offerings").select("*"),
@@ -108,6 +111,11 @@ export default async function AdminDashboard({
       .eq("event_type", "qr.scan")
       .order("created_at", { ascending: false })
       .limit(12),
+    db
+      .from("events")
+      .select("created_at,payload")
+      .eq("event_type", "session.closed")
+      .order("created_at", { ascending: false }),
   ]);
 
   const featured: string = settings?.featured_day ?? "friday";
@@ -120,7 +128,15 @@ export default async function AdminDashboard({
     .eq("offering_day", selectedDay)
     .order("sort_order", { ascending: true });
 
-  const rows = (bookings ?? []) as Booking[];
+  const allRows = (bookings ?? []) as Booking[];
+  const closes = (closedSessions ?? []) as {
+    created_at: string;
+    payload: { session_number?: number; booking_count?: number };
+  }[];
+  const cutoff = closes.length ? closes[0].created_at : null;
+  // Current session = bookings created after the latest close (all if none closed).
+  const rows = cutoff ? allRows.filter((b) => b.created_at > cutoff) : allRows;
+  const currentSessionNumber = closes.length + 1;
   const dayItems = (dayMenu ?? []) as Menu[];
   const offerings = Object.fromEntries(
     ((offeringsData ?? []) as Offering[]).map((o) => [o.day, o]),
@@ -352,6 +368,20 @@ export default async function AdminDashboard({
             ⬇ Export to Excel
           </a>
         </div>
+
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border-2 border-accent/30 bg-accent/5 p-4">
+          <div>
+            <p className="font-display font-extrabold text-maroon">
+              Current session #{currentSessionNumber}
+            </p>
+            <p className="text-sm text-ink/60">
+              {rows.length} booking(s) this session. Closing archives them for
+              analytics and starts fresh — the flag wall resets too.
+            </p>
+          </div>
+          <CloseSessionButton action={closeSession} count={rows.length} />
+        </div>
+
         <div className="overflow-x-auto rounded-2xl border-2 border-ink/10">
           <table className="w-full min-w-[720px] text-left text-sm">
             <thead className="bg-cream-deep font-display text-maroon">
@@ -445,6 +475,23 @@ export default async function AdminDashboard({
             </tbody>
           </table>
         </div>
+
+        {closes.length > 0 && (
+          <div className="mt-4 rounded-2xl border-2 border-ink/10 p-4">
+            <p className="text-xs font-bold uppercase tracking-wide text-ink/50">
+              Past sessions (saved for analytics)
+            </p>
+            <ul className="mt-2 grid gap-1 text-sm text-ink/75 sm:grid-cols-2">
+              {closes.map((s, i) => (
+                <li key={i}>
+                  Session #{s.payload?.session_number ?? "?"} —{" "}
+                  {s.payload?.booking_count ?? 0} booking(s), closed{" "}
+                  {phTime(s.created_at)}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
       </section>
 
       {/* ── Website QR code + scans ──────────────────────────── */}

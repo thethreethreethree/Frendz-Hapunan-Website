@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { randomUUID } from "crypto";
 import { getAdminUser } from "@/lib/auth";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -89,6 +90,45 @@ export async function setAttendeeFlags(formData: FormData) {
     .from("event_settings")
     .update({ show_attendee_flags: formData.get("show_attendee_flags") === "on" })
     .eq("id", 1);
+  revalidatePath("/admin");
+  revalidatePath("/");
+}
+
+// Close the current session and start a new one. Nothing is deleted — a
+// `session.closed` event (append-only, §3.1) stamps the cutoff, and the admin
+// bookings list + public flag wall thereafter show only bookings AFTER it.
+// All prior bookings stay in the DB for analytics.
+export async function closeSession() {
+  const user = await ensureAdmin();
+  const db = createSupabaseAdminClient();
+
+  // Cutoff = the previous close; count bookings created since then (this session).
+  const { data: lastClose } = await db
+    .from("events")
+    .select("created_at")
+    .eq("event_type", "session.closed")
+    .order("created_at", { ascending: false })
+    .limit(1);
+  const cutoff = lastClose && lastClose.length ? lastClose[0].created_at : null;
+
+  let cq = db.from("bookings").select("*", { count: "exact", head: true });
+  if (cutoff) cq = cq.gt("created_at", cutoff);
+  const { count: bookingCount } = await cq;
+
+  const { count: priorCloses } = await db
+    .from("events")
+    .select("*", { count: "exact", head: true })
+    .eq("event_type", "session.closed");
+  const sessionNumber = (priorCloses ?? 0) + 1;
+
+  await db.from("events").insert({
+    event_type: "session.closed",
+    entity_type: "session",
+    entity_id: randomUUID(),
+    actor: `admin:${user.id}`,
+    payload: { session_number: sessionNumber, booking_count: bookingCount ?? 0 },
+  });
+
   revalidatePath("/admin");
   revalidatePath("/");
 }

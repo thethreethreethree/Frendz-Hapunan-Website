@@ -1,4 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
+import { createSupabaseAdminClient } from "./supabase/admin";
 import {
   DEFAULT_EVENT,
   DEFAULT_MENU,
@@ -7,6 +8,38 @@ import {
   type MenuItem,
   type TriviaQuestion,
 } from "./content";
+
+// Server-side service-role client (env-gated). Used for session-aware aggregation
+// that must read bookings but only ever returns non-PII aggregates to the page.
+function adminClient() {
+  if (
+    !process.env.NEXT_PUBLIC_SUPABASE_URL ||
+    !process.env.SUPABASE_SERVICE_ROLE_KEY
+  ) {
+    return null;
+  }
+  return createSupabaseAdminClient();
+}
+
+// Cutoff = created_at of the latest `session.closed` event (null if none).
+// The "current session" is everything created after this timestamp.
+export async function getSessionCutoff(): Promise<string | null> {
+  const db = adminClient();
+  if (!db) return null;
+  try {
+    const { data } = await db
+      .from("events")
+      .select("created_at")
+      .eq("event_type", "session.closed")
+      .order("created_at", { ascending: false })
+      .limit(1);
+    return data && data.length
+      ? (data[0] as { created_at: string }).created_at
+      : null;
+  } catch {
+    return null;
+  }
+}
 
 // Anon, RLS-enforced client for public reads from Server Components.
 // Returns null when env is not configured (e.g. local build before the Supabase
@@ -22,15 +55,30 @@ export type AttendeeFlag = { nationality: string; count: number };
 
 // Public flag wall — nationality codes + counts only (no PII), via the
 // get_attendee_flags() SECURITY DEFINER function (§3.2 RLS intact).
+// Session-aware: only counts bookings created after the current session cutoff.
+// Aggregated server-side (service role); only nationality codes + counts leave the
+// server — never names or emails (§3.2 / A11).
 export async function getAttendeeFlags(): Promise<AttendeeFlag[]> {
-  const c = publicClient();
-  if (!c) return [];
+  const db = adminClient();
+  if (!db) return [];
   try {
-    const { data, error } = await c.rpc("get_attendee_flags");
-    if (error || !data) return [];
-    return (data as AttendeeFlag[]).filter(
-      (f) => f && typeof f.nationality === "string" && f.nationality.length > 0,
-    );
+    const cutoff = await getSessionCutoff();
+    let q = db
+      .from("bookings")
+      .select("nationality")
+      .neq("status", "cancelled")
+      .neq("nationality", "");
+    if (cutoff) q = q.gt("created_at", cutoff);
+    const { data } = await q;
+    const counts: Record<string, number> = {};
+    for (const b of (data ?? []) as { nationality: string }[]) {
+      if (b.nationality) counts[b.nationality] = (counts[b.nationality] ?? 0) + 1;
+    }
+    return Object.entries(counts)
+      .map(([nationality, count]) => ({ nationality, count }))
+      .sort(
+        (a, b) => b.count - a.count || a.nationality.localeCompare(b.nationality),
+      );
   } catch {
     return [];
   }
