@@ -85,14 +85,20 @@ export async function saveEventSettings(formData: FormData) {
 export async function saveDailyOffering(day: string, formData: FormData) {
   await ensureAdmin();
   const db = createSupabaseAdminClient();
-  await db
-    .from("daily_offerings")
-    .update({
-      is_active: formData.get("is_active") === "on",
-      price_per_pax: Number(formData.get("price_per_pax") ?? 0),
-      event_time: String(formData.get("event_time") ?? ""),
-    })
-    .eq("day", day);
+  const patch = {
+    is_active: formData.get("is_active") === "on",
+    price_per_pax: Number(formData.get("price_per_pax") ?? 0),
+    price_outside: Number(formData.get("price_outside") ?? 599),
+    event_time: String(formData.get("event_time") ?? ""),
+  };
+  const { error } = await db.from("daily_offerings").update(patch).eq("day", day);
+  if (error) {
+    // price_outside column not migrated yet — save everything else so the admin
+    // still works; the outside price starts applying once the migration is run.
+    const { price_outside: _po, ...rest } = patch;
+    void _po;
+    await db.from("daily_offerings").update(rest).eq("day", day);
+  }
   revalidatePath("/admin");
   revalidatePath("/");
 }

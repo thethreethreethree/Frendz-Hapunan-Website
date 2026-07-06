@@ -160,20 +160,25 @@ export async function getEventSettings(day?: string): Promise<EventSettings> {
     let ev = (data as EventSettings) ?? DEFAULT_EVENT;
 
     // Price + time come from the shown day's offering (closest active day).
+    // select("*") (not a column list) so this keeps working even before the
+    // price_outside column migration is applied — the field is just absent then.
     const d = day ?? (await getNextActiveDay());
+    let priceOutside = ev.price_outside ?? DEFAULT_EVENT.price_outside;
     const off = await c
       .from("daily_offerings")
-      .select("price_per_pax,event_time")
+      .select("*")
       .eq("day", d)
       .single();
     if (!off.error && off.data) {
+      const o = off.data as Record<string, unknown>;
       ev = {
         ...ev,
-        price_per_pax: (off.data as { price_per_pax: number }).price_per_pax,
-        event_time: (off.data as { event_time: string }).event_time,
+        price_per_pax: Number(o.price_per_pax),
+        event_time: String(o.event_time),
       };
+      if (o.price_outside != null) priceOutside = Number(o.price_outside);
     }
-    return ev;
+    return { ...ev, price_outside: priceOutside };
   } catch {
     return DEFAULT_EVENT;
   }

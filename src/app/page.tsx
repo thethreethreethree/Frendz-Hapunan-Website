@@ -30,7 +30,8 @@ export default async function Home() {
     getAttendeeFlags(),
   ]);
   const dayName = day.charAt(0).toUpperCase() + day.slice(1);
-  const price = `${event.currency}${event.price_per_pax}`;
+  const priceHostel = `${event.currency}${event.price_per_pax}`;
+  const priceOutside = `${event.currency}${event.price_outside}`;
   const totalAttendees = flags.reduce((s, f) => s + (f.count ?? 0), 0);
   const showFlags = event.show_attendee_flags !== false && flags.length > 0;
 
@@ -61,8 +62,13 @@ export default async function Home() {
             <span className="rounded-full bg-cream/15 px-4 py-2 ring-1 ring-cream/30">
               🕢 {event.event_time}
             </span>
-            <span className="rounded-full bg-cream px-4 py-2 font-display text-lg font-extrabold text-accent-dark">
-              {price} / pax
+            <span className="rounded-full bg-cream px-4 py-2 font-display font-extrabold text-accent-dark">
+              <span className="text-lg">{priceHostel}</span>
+              <span className="text-xs font-semibold text-ink/60"> hostel</span>
+              <span className="mx-1.5 text-ink/30">·</span>
+              <span className="text-lg">{priceOutside}</span>
+              <span className="text-xs font-semibold text-ink/60"> outside</span>
+              <span className="text-xs font-semibold text-ink/50"> / pax</span>
             </span>
           </div>
           <div className="flex flex-col items-stretch gap-3 sm:flex-row sm:items-center">
@@ -87,8 +93,9 @@ export default async function Home() {
             The Hapunan Set Menu
           </h2>
           <p className="mx-auto mt-2 max-w-xl text-ink/70">
-            One celebratory four-course Filipino feast, served family-style. {price}{" "}
-            per person.
+            One celebratory four-course Filipino feast, served family-style.{" "}
+            {priceHostel} per person for hostel guests, {priceOutside} for outside
+            guests.
           </p>
         </div>
 
@@ -173,8 +180,9 @@ export default async function Home() {
           </h2>
           <p className="mx-auto mt-3 max-w-xl text-cream/85">
             Reserve your seat online, then drop by the Frendz Hostel reception to
-            settle the {price}/pax. Your confirmation shows up right here when
-            payment is received.
+            settle your seat — {priceHostel}/pax for hostel guests, {priceOutside}/pax
+            for outside guests. Your confirmation shows up right here when payment is
+            received.
           </p>
           <div className="mt-7 flex flex-col items-center justify-center gap-4 sm:flex-row">
             <CTAButton href="/book" tone="accent">

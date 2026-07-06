@@ -16,7 +16,8 @@ export default async function BookingStatusPage({
     getEventSettings(),
   ]);
 
-  const price = `${event.currency}${event.price_per_pax}`;
+  const priceHostel = `${event.currency}${event.price_per_pax}`;
+  const priceOutside = `${event.currency}${event.price_outside}`;
 
   return (
     <main className="flex-1">
@@ -93,7 +94,11 @@ export default async function BookingStatusPage({
             </h1>
             <p className="mt-3 text-ink/80">{event.reception_instructions}</p>
             <p className="mt-4 font-display text-xl font-extrabold text-maroon">
-              Amount due: {price} / pax
+              Amount due: {priceHostel} / pax
+              <span className="text-base font-semibold text-ink/60">
+                {" "}
+                (hostel guests) · {priceOutside} / pax (outside guests)
+              </span>
             </p>
             <p className="mt-4 text-sm text-ink/60">
               This page updates to <strong>Confirmed</strong> automatically once

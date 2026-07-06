@@ -49,6 +49,7 @@ type Offering = {
   day: string;
   is_active: boolean;
   price_per_pax: number;
+  price_outside?: number;
   event_time: string;
 };
 
@@ -292,10 +293,10 @@ export default async function AdminDashboard({
             )}
           </div>
 
-          {/* Active / price / time */}
+          {/* Active / hostel price / outside price / time */}
           <form
             action={saveDailyOffering.bind(null, selectedDay)}
-            className="grid items-end gap-3 sm:grid-cols-3"
+            className="grid items-end gap-3 sm:grid-cols-4"
           >
             <label className="flex items-center gap-2 pb-2 text-sm font-bold text-maroon">
               <input
@@ -307,12 +308,22 @@ export default async function AdminDashboard({
               Active (food served)
             </label>
             <label className="text-sm font-bold text-maroon">
-              Price / pax
+              Hostel guest price / pax
               <input
                 name="price_per_pax"
                 type="number"
                 step="1"
                 defaultValue={selOff?.price_per_pax ?? 499}
+                className={input}
+              />
+            </label>
+            <label className="text-sm font-bold text-maroon">
+              Outside guest price / pax
+              <input
+                name="price_outside"
+                type="number"
+                step="1"
+                defaultValue={selOff?.price_outside ?? 599}
                 className={input}
               />
             </label>
@@ -324,7 +335,7 @@ export default async function AdminDashboard({
                 className={input}
               />
             </label>
-            <div className="sm:col-span-3">
+            <div className="sm:col-span-4">
               <button className="rounded-full bg-brand px-5 py-2 text-sm font-bold text-cream">
                 Save day details
               </button>

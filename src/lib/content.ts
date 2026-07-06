@@ -9,7 +9,8 @@ export type EventSettings = {
   tagline: string;
   location: string;
   event_time: string;
-  price_per_pax: number;
+  price_per_pax: number; // hostel-guest price (guests staying at Frendz Hostel)
+  price_outside: number; // outside-guest price (walk-ins / not staying at the hostel)
   currency: string;
   reception_instructions: string;
   show_attendee_flags?: boolean;
@@ -56,6 +57,7 @@ export const DEFAULT_EVENT: EventSettings = {
   location: "Frendz Hostel El Nido",
   event_time: "7:30 PM",
   price_per_pax: 499,
+  price_outside: 599,
   currency: "₱",
   reception_instructions:
     "Please proceed to the Frendz Hostel reception to complete your payment and confirm your seat. Once payment is received, your booking will be marked Confirmed here.",
