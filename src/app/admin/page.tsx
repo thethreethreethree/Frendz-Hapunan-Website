@@ -191,9 +191,11 @@ export default async function AdminDashboard({
     selOff?.menu_option ||
     menuOptions[0] ||
     "A";
-  const optionItems = menuRows.filter(
-    (m) => (m.menu_option ?? "A") === selectedOption,
-  );
+  // Exact match — do NOT fold untagged (null) dishes into A. Untagged dishes are
+  // surfaced separately below so they can never masquerade as another option and
+  // get mistakenly deleted (the 2026-07-06 Option-B loss; see AMD-006).
+  const optionItems = menuRows.filter((m) => m.menu_option === selectedOption);
+  const untaggedItems = menuRows.filter((m) => !m.menu_option);
   // Which active days currently serve the option being edited.
   const servedOnDays = Object.values(offerings)
     .filter((o) => o.is_active && (o.menu_option ?? "A") === selectedOption)
@@ -386,6 +388,22 @@ export default async function AdminDashboard({
               </button>
             </div>
           </form>
+
+          {/* Guard: any dish not assigned to a combination is shown here, never
+              silently grouped under an option (prevents accidental deletion). */}
+          {untaggedItems.length > 0 && (
+            <div className="mt-6 rounded-2xl border-2 border-fiesta-red/40 bg-fiesta-red/5 p-4">
+              <p className="text-sm font-bold text-fiesta-red">
+                {untaggedItems.length} dish
+                {untaggedItems.length === 1 ? "" : "es"} not assigned to a menu
+                combination:
+              </p>
+              <p className="mt-1 text-sm text-ink/70">
+                {untaggedItems.map((m) => m.name).join(", ")}. Set each one&apos;s
+                combination (below) before deleting anything.
+              </p>
+            </div>
+          )}
 
           {/* Menu combinations (A/B) — edit dishes per option, not per day */}
           <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
