@@ -216,8 +216,33 @@ export async function getMenu(day?: string): Promise<MenuItem[]> {
   try {
     const d = day ?? (await getNextActiveDay());
 
-    // Day-scoped menu (post-calendar-migration). Errors if offering_day column
-    // doesn't exist yet — in which case we fall back to all available items.
+    // Menu-option model: the day points at a combination (A/B); serve that
+    // combination's dishes. Falls back to the legacy per-day (offering_day) menu
+    // whenever the option isn't assigned yet or the column isn't migrated — so
+    // the site is correct both before and after the migration/backfill.
+    let option: string | null = null;
+    const offQ = await c
+      .from("daily_offerings")
+      .select("*")
+      .eq("day", d)
+      .single();
+    if (!offQ.error && offQ.data) {
+      option = (offQ.data as { menu_option?: string | null }).menu_option ?? null;
+    }
+
+    if (option) {
+      const optQ = await c
+        .from("menu_items")
+        .select("*")
+        .eq("is_available", true)
+        .eq("menu_option", option)
+        .order("sort_order", { ascending: true });
+      if (!optQ.error && optQ.data && optQ.data.length) {
+        return optQ.data as MenuItem[];
+      }
+    }
+
+    // Legacy day-scoped fallback.
     const dayQ = await c
       .from("menu_items")
       .select("*")

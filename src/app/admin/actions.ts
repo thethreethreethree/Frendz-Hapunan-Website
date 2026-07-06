@@ -90,13 +90,15 @@ export async function saveDailyOffering(day: string, formData: FormData) {
     price_per_pax: Number(formData.get("price_per_pax") ?? 0),
     price_outside: Number(formData.get("price_outside") ?? 599),
     event_time: String(formData.get("event_time") ?? ""),
+    menu_option: String(formData.get("menu_option") ?? "A"),
   };
   const { error } = await db.from("daily_offerings").update(patch).eq("day", day);
   if (error) {
-    // price_outside column not migrated yet — save everything else so the admin
-    // still works; the outside price starts applying once the migration is run.
-    const { price_outside: _po, ...rest } = patch;
+    // A newer column (price_outside / menu_option) may not be migrated yet — save
+    // everything else so the admin keeps working; the rest applies once migrated.
+    const { price_outside: _po, menu_option: _mo, ...rest } = patch;
     void _po;
+    void _mo;
     await db.from("daily_offerings").update(rest).eq("day", day);
   }
   revalidatePath("/admin");
@@ -183,6 +185,9 @@ export async function saveMenuItem(id: string, formData: FormData) {
   revalidatePath("/");
 }
 
+// Add a dish to a MENU OPTION (combination A/B), not a single day. Every day
+// assigned that option serves it. offering_day is left at its column default
+// ('friday') — it's the legacy per-day key, unused once options drive the menu.
 export async function addMenuItem(formData: FormData) {
   const user = await ensureAdmin();
   const db = createSupabaseAdminClient();
@@ -193,14 +198,21 @@ export async function addMenuItem(formData: FormData) {
     price: Number(formData.get("price") ?? 0),
     sort_order: Number(formData.get("sort_order") ?? 99),
     is_available: true,
-    offering_day: String(formData.get("day") ?? "friday"),
+    menu_option: String(formData.get("menu_option") ?? "A"),
   };
-  const { data } = await db.from("menu_items").insert(insert).select("id").single();
-  if (data) {
+  let res = await db.from("menu_items").insert(insert).select("id").single();
+  if (res.error) {
+    // menu_option column not migrated yet — insert without it (offering_day
+    // default keeps the row valid); it gets tagged once the migration runs.
+    const { menu_option: _mo, ...rest } = insert;
+    void _mo;
+    res = await db.from("menu_items").insert(rest).select("id").single();
+  }
+  if (res.data) {
     await db.from("events").insert({
       event_type: "menu_item.created",
       entity_type: "menu_item",
-      entity_id: data.id,
+      entity_id: res.data.id,
       actor: `admin:${user.id}`,
       payload: insert,
     });

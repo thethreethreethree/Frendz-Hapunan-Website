@@ -43,6 +43,7 @@ type Menu = {
   category: string;
   is_available: boolean;
   sort_order: number;
+  menu_option?: string | null;
 };
 
 type Offering = {
@@ -51,7 +52,12 @@ type Offering = {
   price_per_pax: number;
   price_outside?: number;
   event_time: string;
+  menu_option?: string | null;
 };
+
+// The menu combinations selectable per day. A/B always available; any other
+// options discovered in the data are appended so the set stays data-driven.
+const BASE_MENU_OPTIONS = ["A", "B"];
 
 const DAYS = [
   { key: "monday", label: "Mon" },
@@ -84,7 +90,7 @@ function phTime(iso: string) {
 export default async function AdminDashboard({
   searchParams,
 }: {
-  searchParams: Promise<{ day?: string }>;
+  searchParams: Promise<{ day?: string; menuopt?: string }>;
 }) {
   const user = await getAdminUser();
   if (!user) redirect("/admin/login");
@@ -147,10 +153,9 @@ export default async function AdminDashboard({
   const selectedDay =
     sp?.day && DAY_KEYS.includes(sp.day) ? sp.day : featured;
 
-  const { data: dayMenu } = await db
+  const { data: allMenu } = await db
     .from("menu_items")
     .select("*")
-    .eq("offering_day", selectedDay)
     .order("sort_order", { ascending: true });
 
   const allRows = (bookings ?? []) as Booking[];
@@ -162,11 +167,37 @@ export default async function AdminDashboard({
   // Current session = bookings created after the latest close (all if none closed).
   const rows = cutoff ? allRows.filter((b) => b.created_at > cutoff) : allRows;
   const currentSessionNumber = closes.length + 1;
-  const dayItems = (dayMenu ?? []) as Menu[];
+  const menuRows = (allMenu ?? []) as Menu[];
   const offerings = Object.fromEntries(
     ((offeringsData ?? []) as Offering[]).map((o) => [o.day, o]),
   ) as Record<string, Offering>;
   const selOff = offerings[selectedDay];
+
+  // ── Menu options (combinations A/B) ──────────────────────────────
+  // Available options = A/B plus any others present in the data.
+  const menuOptions = Array.from(
+    new Set([
+      ...BASE_MENU_OPTIONS,
+      ...menuRows.map((m) => m.menu_option).filter((o): o is string => !!o),
+      ...Object.values(offerings)
+        .map((o) => o.menu_option)
+        .filter((o): o is string => !!o),
+    ]),
+  ).sort();
+  // The option being edited: explicit ?menuopt override, else the selected day's
+  // assigned option, else the first available option.
+  const selectedOption =
+    (sp?.menuopt && menuOptions.includes(sp.menuopt) && sp.menuopt) ||
+    selOff?.menu_option ||
+    menuOptions[0] ||
+    "A";
+  const optionItems = menuRows.filter(
+    (m) => (m.menu_option ?? "A") === selectedOption,
+  );
+  // Which active days currently serve the option being edited.
+  const servedOnDays = Object.values(offerings)
+    .filter((o) => o.is_active && (o.menu_option ?? "A") === selectedOption)
+    .map((o) => o.day);
   const pending = rows.filter((b) => b.status === "pending_payment");
 
   // ── Analytics (current session) ──────────────────────────────────
@@ -308,6 +339,20 @@ export default async function AdminDashboard({
               Active (food served)
             </label>
             <label className="text-sm font-bold text-maroon">
+              Menu served
+              <select
+                name="menu_option"
+                defaultValue={selOff?.menu_option ?? "A"}
+                className={input}
+              >
+                {menuOptions.map((o) => (
+                  <option key={o} value={o}>
+                    Menu Option {o}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="text-sm font-bold text-maroon">
               Hostel guest price / pax
               <input
                 name="price_per_pax"
@@ -335,24 +380,59 @@ export default async function AdminDashboard({
                 className={input}
               />
             </label>
-            <div className="sm:col-span-4">
+            <div className="flex items-end sm:col-span-3">
               <button className="rounded-full bg-brand px-5 py-2 text-sm font-bold text-cream">
                 Save day details
               </button>
             </div>
           </form>
 
-          {/* Day menu */}
-          <h4 className="mb-2 mt-6 font-display font-extrabold capitalize text-brand-dark">
-            {selectedDay} menu
-          </h4>
+          {/* Menu combinations (A/B) — edit dishes per option, not per day */}
+          <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
+            <h4 className="font-display font-extrabold text-brand-dark">
+              Menu combinations
+            </h4>
+            <div className="flex gap-2">
+              {menuOptions.map((o) => (
+                <a
+                  key={o}
+                  href={`/admin?day=${selectedDay}&menuopt=${o}`}
+                  className={`rounded-full px-4 py-1.5 text-sm font-bold transition-colors ${
+                    o === selectedOption
+                      ? "bg-brand text-cream"
+                      : "border-2 border-ink/15 text-ink/70 hover:border-brand"
+                  }`}
+                >
+                  Menu Option {o}
+                </a>
+              ))}
+            </div>
+          </div>
+          <p className="mb-3 mt-1 text-sm text-ink/60">
+            Editing <strong>Menu Option {selectedOption}</strong> — changes apply to
+            every day set to this combination
+            {servedOnDays.length > 0 ? (
+              <>
+                {" "}
+                (now served on{" "}
+                <span className="font-bold capitalize text-brand-dark">
+                  {servedOnDays.join(", ")}
+                </span>
+                ).
+              </>
+            ) : (
+              <> (not assigned to any active day yet).</>
+            )}{" "}
+            Use the <strong>Menu served</strong> dropdown above to assign a
+            combination to a day.
+          </p>
           <div className="grid gap-3">
-            {dayItems.length === 0 && (
+            {optionItems.length === 0 && (
               <p className="text-sm text-ink/50">
-                No dishes for this day yet — add one below.
+                No dishes in this combination yet — add one below.
               </p>
             )}
-            {dayItems.map((m) => (
+            {optionItems.map((m) => (
               <form
                 key={m.id}
                 action={saveMenuItem.bind(null, m.id)}
@@ -374,7 +454,7 @@ export default async function AdminDashboard({
                   step="1"
                   defaultValue={0}
                   className={`${input} sm:col-span-2`}
-                  title="Per-item price (set 0; the day price is above)"
+                  title="Per-item price (set 0; the day price is set per day above)"
                 />
                 <textarea
                   name="description"
@@ -406,12 +486,12 @@ export default async function AdminDashboard({
             ))}
           </div>
 
-          {/* Add dish to this day */}
+          {/* Add dish to this menu combination */}
           <form
             action={addMenuItem}
             className="mt-4 grid gap-3 rounded-2xl border-2 border-dashed border-ink/20 p-4 sm:grid-cols-12"
           >
-            <input type="hidden" name="day" value={selectedDay} />
+            <input type="hidden" name="menu_option" value={selectedOption} />
             <input
               name="name"
               placeholder="New dish name"
@@ -427,7 +507,7 @@ export default async function AdminDashboard({
               name="sort_order"
               type="number"
               placeholder="Order"
-              defaultValue={dayItems.length + 1}
+              defaultValue={optionItems.length + 1}
               className={`${input} sm:col-span-2`}
             />
             <input
@@ -436,8 +516,8 @@ export default async function AdminDashboard({
               className={`${input} sm:col-span-12`}
             />
             <div className="sm:col-span-12">
-              <button className="rounded-full bg-accent px-6 py-2 font-display font-bold capitalize text-cream">
-                + Add dish to {selectedDay}
+              <button className="rounded-full bg-accent px-6 py-2 font-display font-bold text-cream">
+                + Add dish to Menu Option {selectedOption}
               </button>
             </div>
           </form>
