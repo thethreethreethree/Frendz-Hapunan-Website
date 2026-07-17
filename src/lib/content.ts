@@ -41,6 +41,8 @@ const IMAGE_BY_NAME: Record<string, string> = {
   "Fish Tinapa Okoy": "/menu/fish-tinapa-okoy.jpg",
   "Adobong Manok sa Latik at Lato": "/menu/adobong-manok.jpg",
   "Turones": "/menu/turones.jpg",
+  // Saturday (Option C)
+  "Adobo sa Latik and Ensaladang Talong": "/menu/adobo-sa-latik-talong.jpg",
 };
 
 export function imageForMenuItem(item: {
